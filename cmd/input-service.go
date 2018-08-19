@@ -8,7 +8,7 @@ import (
 	"github.com/djthorpe/gopi"
 
 	// Modules
-	_ "github.com/djthorpe/barcode/sys/input"
+	_ "github.com/djthorpe/gopi-input/sys/input"
 )
 
 func Main(app *gopi.AppInstance, done chan<- struct{}) error {
