@@ -8,11 +8,24 @@
   Documentation http://djthorpe.github.io/gopi/
   For Licensing and Usage information, please see LICENSE.md
 */
+
 package input
 
 import (
+	// Frameworks
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/sys/hw/linux"
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	// Pattern for finding event-driven input devices
+	INPUT_PATH_DEVICES = "/sys/class/input/event*"
+
+	// Maximum multi-touch slots
+	INPUT_MAX_MULTITOUCH_SLOTS = 32
 )
 
 ////////////////////////////////////////////////////////////////////////////////
