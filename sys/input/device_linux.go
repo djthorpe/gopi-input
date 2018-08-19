@@ -69,6 +69,9 @@ type device struct {
 	vendor  uint16
 	version uint16
 
+	// The Device ID - combo of vendor/product
+	device_id uint32
+
 	// Capabilities
 	capabilities []evType
 
@@ -153,6 +156,7 @@ func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 		this.vendor = vendor
 		this.product = product
 		this.version = version
+		this.device_id = uint32(vendor)<<16 | uint32(product)
 	}
 
 	// Get capabilities
@@ -216,12 +220,15 @@ func (this *device) Close() error {
 		this.log.Warn("Unwatch: %v", err)
 	}
 
-	// close file handle
+	// Close file handle
 	if err := this.handle.Close(); err != nil {
 		return err
 	} else {
 		this.handle = nil
 	}
+
+	// Close publisher
+	this.Publisher.Close()
 
 	// Blank out
 	this.filepoll = nil

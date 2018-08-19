@@ -117,32 +117,33 @@ func (this *device) evReceive(dev *os.File, mode linux.FilePollMode) {
 // Decode the EV_SYN syncronization raw event.
 func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
 	evt := &input_event{
-		device:      this,
-		timestamp:   time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
-		device_type: this.device_type,
+		source:    this,
+		timestamp: time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
+		device:    this.device_type,
+		device_id: this.device_id,
 	}
 
 	// Mouse and keyboard movements
 	if this.rel_position.Equals(gopi.ZeroPoint) == false {
-		evt.event_type = gopi.INPUT_EVENT_RELPOSITION
+		evt.event = gopi.INPUT_EVENT_RELPOSITION
 		evt.rel_position = this.rel_position
 		this.rel_position = gopi.ZeroPoint
 		this.last_position = this.position
 	} else if this.position.Equals(this.last_position) == false {
-		evt.event_type = gopi.INPUT_EVENT_ABSPOSITION
+		evt.event = gopi.INPUT_EVENT_ABSPOSITION
 		this.last_position = this.position
 	} else if this.key_action == EV_VALUE_KEY_UP {
-		evt.event_type = gopi.INPUT_EVENT_KEYRELEASE
+		evt.event = gopi.INPUT_EVENT_KEYRELEASE
 		evt.key_code = gopi.KeyCode(this.key_code)
 		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
 	} else if this.key_action == EV_VALUE_KEY_DOWN {
-		evt.event_type = gopi.INPUT_EVENT_KEYPRESS
+		evt.event = gopi.INPUT_EVENT_KEYPRESS
 		evt.key_code = gopi.KeyCode(this.key_code)
 		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
 	} else if this.key_action == EV_VALUE_KEY_REPEAT {
-		evt.event_type = gopi.INPUT_EVENT_KEYREPEAT
+		evt.event = gopi.INPUT_EVENT_KEYREPEAT
 		evt.key_code = gopi.KeyCode(this.key_code)
 		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
@@ -243,19 +244,20 @@ func (this *device) evDecodeAbs(raw_event *evEvent) gopi.InputEvent {
 
 func (this *device) evDecodeAbsTouch(raw_event *evEvent) gopi.InputEvent {
 	evt := &input_event{
-		device:      this,
-		timestamp:   time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
-		device_type: this.device_type,
+		source:    this,
+		timestamp: time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
+		device:    this.device_type,
+		device_id: this.device_id,
 	}
 
 	// Decode the slot_id, if -1 then this is the release for a slot
 	if slot_id := int16(raw_event.Value); slot_id == -1 {
 		this.slots[this.slot].active = false
-		evt.event_type = gopi.INPUT_EVENT_TOUCHRELEASE
+		evt.event = gopi.INPUT_EVENT_TOUCHRELEASE
 	} else if slot_id < INPUT_MAX_MULTITOUCH_SLOTS {
 		this.slots[this.slot].active = true
 		this.slots[this.slot].id = slot_id
-		evt.event_type = gopi.INPUT_EVENT_TOUCHPRESS
+		evt.event = gopi.INPUT_EVENT_TOUCHPRESS
 	} else {
 		this.log.Warn("evDecodeAbsTouch: %v Ignoring slot %v", raw_event.Type, slot_id)
 	}
