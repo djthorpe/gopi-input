@@ -46,8 +46,8 @@ type manager struct {
 	// List of open devices
 	devices []gopi.InputDevice
 
-	// Publisher
-	event.Publisher
+	// event merger (also acts as publisher)
+	event.Merger
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,6 +75,18 @@ func (config InputManager) Open(log gopi.Logger) (gopi.Driver, error) {
 // Close Input driver
 func (this *manager) Close() error {
 	this.log.Debug("<sys.input.InputManager.Close>{ }")
+
+	// Close all open devices
+	for _, device := range this.devices {
+		if device != nil {
+			if err := this.CloseDevice(device); err != nil {
+				this.log.Warn("<sys.input.InputManager.Close> Error: %v", err)
+			}
+		}
+	}
+
+	// Close publisher
+	this.Merger.Close()
 
 	// Empty
 	this.filepoll = nil
@@ -125,11 +137,33 @@ func (this *manager) OpenDevicesByName(alias string, flags gopi.InputDeviceType,
 		}
 	}
 
+	// Subscribe to events from device
+	for _, device := range opened_devices {
+		this.Merger.Merge(device)
+		this.devices = append(this.devices, device)
+	}
+
 	return opened_devices, nil
 }
 
 func (this *manager) CloseDevice(device gopi.InputDevice) error {
-	return gopi.ErrNotImplemented
+	this.log.Debug2("<sys.input.InputManager.CloseDevice>{ device=%v }", device)
+
+	// Find device in array of devices
+	found := -1
+	for i, d := range this.devices {
+		if d == device {
+			found = i
+		}
+	}
+	if found == -1 {
+		return gopi.ErrNotFound
+	}
+
+	// TODO: Unsubscribe from events
+	this.Merger.Unmerge(device)
+
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
