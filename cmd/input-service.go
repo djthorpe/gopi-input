@@ -10,6 +10,7 @@ import (
 
 	// Modules
 	_ "github.com/djthorpe/gopi-input/sys/input"
+	_ "github.com/djthorpe/gopi-input/sys/keymap"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
@@ -33,7 +34,8 @@ func PrintDevicesTable(devices []gopi.InputDevice) {
 
 func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 	// Subscribe to events
-	evt := app.Input.Subscribe()
+	evt_input := app.Input.Subscribe()
+	evt_keymap := app.ModuleInstance("keymap").(gopi.Publisher).Subscribe()
 
 FOR_LOOP:
 	for {
@@ -43,13 +45,16 @@ FOR_LOOP:
 		case <-done:
 			app.Logger.Info("Done")
 			break FOR_LOOP
-		case <-evt:
-			app.Logger.Info("Evt: %v", evt)
+		case event := <-evt_input:
+			app.Logger.Info("Input: %v", event)
+		case event := <-evt_keymap:
+			app.Logger.Info("Keymap: %v", event)
 		}
 	}
 
 	// Unsubscribe from events
-	app.Input.Unsubscribe(evt)
+	app.Input.Unsubscribe(evt_input)
+	app.ModuleInstance("keymap").(gopi.Publisher).Unsubscribe(evt_keymap)
 
 	// Return success
 	return nil
@@ -78,7 +83,7 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 }
 
 func main() {
-	config := gopi.NewAppConfig("input")
+	config := gopi.NewAppConfig("input", "keymap")
 	config.AppFlags.FlagBool("watch", false, "Watch for device events")
 	os.Exit(gopi.CommandLineTool(config, Main, EventLoop))
 }

@@ -160,7 +160,7 @@ func (this *manager) CloseDevice(device gopi.InputDevice) error {
 		return gopi.ErrNotFound
 	}
 
-	// TODO: Unsubscribe from events
+	// Unsubscribe from events
 	this.Merger.Unmerge(device)
 
 	return nil

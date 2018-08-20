@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 
@@ -11,6 +10,7 @@ import (
 
 type Merger struct {
 	sync.Mutex
+	Publisher
 
 	// the publishers we are watching
 	publishers map[gopi.Publisher]<-chan gopi.Event
@@ -20,6 +20,7 @@ type Merger struct {
 
 	// signal changes
 	change chan struct{}
+	done   chan struct{}
 }
 
 func (this *Merger) Merge(publisher gopi.Publisher) {
@@ -38,10 +39,9 @@ func (this *Merger) Merge(publisher gopi.Publisher) {
 	}
 	// If no change then start go routine
 	if this.change == nil {
-		fmt.Println("Merge this=%v change=%v", this, this.change)
 		this.change = make(chan struct{})
+		this.done = make(chan struct{})
 		go this.mergeInBackground()
-
 	}
 	// We cannot merge twice, so ignore
 	if _, exists := this.publishers[publisher]; exists {
@@ -70,6 +70,9 @@ func (this *Merger) Unmerge(publisher gopi.Publisher) {
 }
 
 func (this *Merger) Close() {
+	// Close publisher
+	this.Publisher.Close()
+
 	for publisher := range this.publishers {
 		this.Unmerge(publisher)
 	}
@@ -77,26 +80,12 @@ func (this *Merger) Close() {
 		// Close change channel
 		close(this.change)
 	}
-	// TODO: Wait for end of mergeInBackground
+	// Wait for done signal
+	<-this.done
 	// Empty data structures
 	this.publishers = nil
 	this.in = nil
-}
 
-///////////////////////////////////////////////////////////////////////////////
-// PUBLISHER
-
-func (this *Merger) Subscribe() <-chan gopi.Event {
-	fmt.Println("SUBSCRIBE")
-	return nil
-}
-
-func (this *Merger) Unsubscribe(subscriber <-chan gopi.Event) {
-	fmt.Println("UNSUBSCRIBE")
-}
-
-func (this *Merger) Emit(evt gopi.Event) {
-	fmt.Println("EMIT", evt)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -151,4 +140,6 @@ FOR_LOOP:
 			cases = this.cases()
 		}
 	}
+	// Indicate the background thread is done
+	this.done <- gopi.DONE
 }
