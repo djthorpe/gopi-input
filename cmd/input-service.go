@@ -35,7 +35,6 @@ func PrintDevicesTable(devices []gopi.InputDevice) {
 func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 	// Subscribe to events
 	evt_input := app.Input.Subscribe()
-	evt_keymap := app.ModuleInstance("keymap").(gopi.Publisher).Subscribe()
 
 FOR_LOOP:
 	for {
@@ -47,14 +46,11 @@ FOR_LOOP:
 			break FOR_LOOP
 		case event := <-evt_input:
 			app.Logger.Info("Input: %v", event)
-		case event := <-evt_keymap:
-			app.Logger.Info("Keymap: %v", event)
 		}
 	}
 
 	// Unsubscribe from events
 	app.Input.Unsubscribe(evt_input)
-	app.ModuleInstance("keymap").(gopi.Publisher).Unsubscribe(evt_keymap)
 
 	// Return success
 	return nil
@@ -83,7 +79,7 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 }
 
 func main() {
-	config := gopi.NewAppConfig("input", "keymap")
+	config := gopi.NewAppConfig("input")
 	config.AppFlags.FlagBool("watch", false, "Watch for device events")
 	os.Exit(gopi.CommandLineTool(config, Main, EventLoop))
 }
