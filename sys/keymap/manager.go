@@ -71,7 +71,7 @@ func (config KeymapManager) Open(log gopi.Logger) (gopi.Driver, error) {
 	this.done = make(chan struct{})
 
 	// Subscribe to input manager events
-	go this.receiveEvents()
+	//go this.receiveEvents()
 
 	// Return success
 	return this, nil
@@ -118,13 +118,13 @@ func (config KeymapManager) root() string {
 	}
 }
 
+/*
 /////////////////////////////////////////////////////////////////////
 // RECEIVE EVENTS FROM INPUT MANAGER
 
 func (this *manager) receiveEvents() {
-	evt := this.InputManager.Subscribe()
+	evt := this.input.Subscribe()
 
-FOR_LOOP:
 	for {
 		select {
 		case event := <-evt:
@@ -133,6 +133,7 @@ FOR_LOOP:
 	}
 
 	// Signal end of goroutine
-	this.InputManager.Unsubscribe(evt)
+	this.input.Unsubscribe(evt)
 	done <- gopi.DONE
 }
+*/

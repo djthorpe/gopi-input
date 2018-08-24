@@ -18,6 +18,7 @@ import (
 	"path"
 	"path/filepath"
 	"time"
+	"unsafe"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
@@ -30,6 +31,7 @@ import (
 type evType uint16
 type evKeyCode uint16
 type evKeyAction uint32
+type evLEDState uint8
 
 type evEvent struct {
 	Second      uint32
@@ -77,6 +79,22 @@ const (
 	EV_VALUE_KEY_REPEAT evKeyAction = 0x00000002
 )
 
+// LED Constants
+const (
+	EV_LED_NUML     evLEDState = 0x00
+	EV_LED_CAPSL    evLEDState = 0x01
+	EV_LED_SCROLLL  evLEDState = 0x02
+	EV_LED_COMPOSE  evLEDState = 0x03
+	EV_LED_KANA     evLEDState = 0x04
+	EV_LED_SLEEP    evLEDState = 0x05
+	EV_LED_SUSPEND  evLEDState = 0x06
+	EV_LED_MUTE     evLEDState = 0x07
+	EV_LED_MISC     evLEDState = 0x08
+	EV_LED_MAIL     evLEDState = 0x09
+	EV_LED_CHARGING evLEDState = 0x0A
+	EV_LED_MAX      evLEDState = 0x0F
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // CALLBACK
 
@@ -106,6 +124,8 @@ func (this *device) evReceive(dev *os.File, mode linux.FilePollMode) {
 		this.evDecodeRel(&raw_event)
 	case EV_MSC:
 		this.evDecodeMsc(&raw_event)
+	case EV_LED:
+		// Ignore EV_LED events
 	default:
 		this.log.Warn("sys.input.linux.InputDevice.Receive: Ignoring event with type %v", raw_event.Type)
 	}
@@ -163,57 +183,56 @@ func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
 func (this *device) evDecodeKey(raw_event *evEvent) {
 	this.key_code = evKeyCode(raw_event.Code)
 	this.key_action = evKeyAction(raw_event.Value)
-	/*
-			// Set the device state from the key action. For the locks (Caps, Scroll
-			// and Num) we also reflect the change with the LED and "flip" the state
-			// from the current state.
-			key_state := hw.INPUT_KEYSTATE_NONE
-			switch gopi.InputKeyCode(device.key_code) {
-			case gopi.INPUT_KEY_CAPSLOCK:
-				// Flip CAPS LOCK state and set LED
-				if this.key_action == EV_VALUE_KEY_DOWN {
-					device.state ^= hw.INPUT_KEYSTATE_CAPSLOCK
-					evSetLEDState(device.handle, EV_LED_CAPSL, device.state&hw.INPUT_KEYSTATE_CAPSLOCK != hw.INPUT_KEYSTATE_NONE)
-				}
-			case hw.INPUT_KEY_NUMLOCK:
-				// Flip NUM LOCK state and set LED
-				if device.key_action == EV_VALUE_KEY_DOWN {
-					device.state ^= hw.INPUT_KEYSTATE_NUMLOCK
-					evSetLEDState(device.handle, EV_LED_NUML, device.state&hw.INPUT_KEYSTATE_NUMLOCK != hw.INPUT_KEYSTATE_NONE)
-				}
-			case hw.INPUT_KEY_SCROLLLOCK:
-				// Flip SCROLL LOCK state and set LED
-				if device.key_action == EV_VALUE_KEY_DOWN {
-					device.state ^= hw.INPUT_KEYSTATE_SCROLLLOCK
-					evSetLEDState(device.handle, EV_LED_SCROLLL, device.state&hw.INPUT_KEYSTATE_SCROLLLOCK != hw.INPUT_KEYSTATE_NONE)
-				}
-			case hw.INPUT_KEY_LEFTSHIFT:
-				key_state = hw.INPUT_KEYSTATE_LEFTSHIFT
-			case hw.INPUT_KEY_RIGHTSHIFT:
-				key_state = hw.INPUT_KEYSTATE_RIGHTSHIFT
-			case hw.INPUT_KEY_LEFTCTRL:
-				key_state = hw.INPUT_KEYSTATE_LEFTCTRL
-			case hw.INPUT_KEY_RIGHTCTRL:
-				key_state = hw.INPUT_KEYSTATE_RIGHTCTRL
-			case hw.INPUT_KEY_LEFTALT:
-				key_state = hw.INPUT_KEYSTATE_LEFTALT
-			case hw.INPUT_KEY_RIGHTALT:
-				key_state = hw.INPUT_KEYSTATE_RIGHTALT
-			case hw.INPUT_KEY_LEFTMETA:
-				key_state = hw.INPUT_KEYSTATE_LEFTMETA
-			case hw.INPUT_KEY_RIGHTMETA:
-				key_state = hw.INPUT_KEYSTATE_RIGHTMETA
-			}
-		// Set state from key action
-		if key_state != hw.INPUT_KEYSTATE_NONE {
-			if device.key_action == EV_VALUE_KEY_DOWN || device.key_action == EV_VALUE_KEY_REPEAT {
-				device.state |= key_state
-			} else if device.key_action == EV_VALUE_KEY_UP {
-				device.state &= (hw.INPUT_KEYSTATE_MAX ^ key_state)
-			}
-		}
-	*/
 
+	// Set the device state from the key action. For the locks (Caps, Scroll
+	// and Num) we also reflect the change with the LED and "flip" the state
+	// from the current state.
+	key_state := gopi.KEYSTATE_NONE
+	switch gopi.KeyCode(this.key_code) {
+	case gopi.KEYCODE_CAPSLOCK:
+		// Flip CAPS LOCK state and set LED
+		if this.key_action == EV_VALUE_KEY_DOWN {
+			this.key_state ^= gopi.KEYSTATE_CAPSLOCK
+			evSetLEDState(this.handle, EV_LED_CAPSL, this.key_state&gopi.KEYSTATE_CAPSLOCK != gopi.KEYSTATE_NONE)
+		}
+	case gopi.KEYCODE_NUMLOCK:
+		// Flip NUM LOCK state and set LED
+		if this.key_action == EV_VALUE_KEY_DOWN {
+			this.key_state ^= gopi.KEYSTATE_NUMLOCK
+			evSetLEDState(this.handle, EV_LED_NUML, this.key_state&gopi.KEYSTATE_NUMLOCK != gopi.KEYSTATE_NONE)
+		}
+	case gopi.KEYCODE_SCROLLLOCK:
+		// Flip SCROLL LOCK state and set LED
+		if this.key_action == EV_VALUE_KEY_DOWN {
+			this.key_state ^= gopi.KEYSTATE_SCROLLLOCK
+			evSetLEDState(this.handle, EV_LED_SCROLLL, this.key_state&gopi.KEYSTATE_SCROLLLOCK != gopi.KEYSTATE_NONE)
+		}
+	case gopi.KEYCODE_LEFTSHIFT:
+		key_state = gopi.KEYSTATE_LEFTSHIFT
+	case gopi.KEYCODE_RIGHTSHIFT:
+		key_state = gopi.KEYSTATE_RIGHTSHIFT
+	case gopi.KEYCODE_LEFTCTRL:
+		key_state = gopi.KEYSTATE_LEFTCTRL
+	case gopi.KEYCODE_RIGHTCTRL:
+		key_state = gopi.KEYSTATE_RIGHTCTRL
+	case gopi.KEYCODE_LEFTALT:
+		key_state = gopi.KEYSTATE_LEFTALT
+	case gopi.KEYCODE_RIGHTALT:
+		key_state = gopi.KEYSTATE_RIGHTALT
+	case gopi.KEYCODE_LEFTMETA:
+		key_state = gopi.KEYSTATE_LEFTMETA
+	case gopi.KEYCODE_RIGHTMETA:
+		key_state = gopi.KEYSTATE_RIGHTMETA
+	}
+
+	// Set device state from key action
+	if key_state != gopi.KEYSTATE_NONE {
+		if this.key_action == EV_VALUE_KEY_DOWN || this.key_action == EV_VALUE_KEY_REPEAT {
+			this.key_state |= key_state
+		} else if this.key_action == EV_VALUE_KEY_UP {
+			this.key_state &= (gopi.KEYSTATE_MAX ^ key_state)
+		}
+	}
 }
 
 func (this *device) evDecodeAbs(raw_event *evEvent) gopi.InputEvent {
@@ -322,6 +341,48 @@ func evSupportsEventType(capabilities []evType, types ...evType) bool {
 	return (count == len(types))
 }
 
+// evSetLEDState sets a single LED state
+func evSetLEDState(handle *os.File, led evLEDState, state bool) error {
+	var event evEvent
+
+	event.Type = EV_LED
+	event.Code = evKeyCode(led)
+
+	if state {
+		event.Value = 1
+	}
+	if err := binary.Write(handle, binary.LittleEndian, &event); err != nil {
+		return err
+	}
+	return nil
+}
+
+// evGetLEDState gets LED states as an array of LED's which are on
+func evGetLEDState(handle *os.File) ([]evLEDState, error) {
+	evbits := new([MAX_IOCTL_SIZE_BYTES]byte)
+	err := evIoctl(handle.Fd(), uintptr(EVIOCGLED), unsafe.Pointer(evbits))
+	if err != 0 {
+		return nil, err
+	}
+	states := make([]evLEDState, 0, EV_LED_MAX)
+	// Shift bits to get the state of each LED value
+OuterLoop:
+	for i := 0; i < len(evbits); i++ {
+		evbyte := evbits[i]
+		for j := 0; j < 8; j++ {
+			state := evLEDState(i<<3 + j)
+			switch {
+			case state >= EV_LED_MAX:
+				break OuterLoop
+			case evbyte&0x01 != 0x00:
+				states = append(states, state)
+			}
+			evbyte >>= 1
+		}
+	}
+	return states, nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -353,5 +414,34 @@ func (t evType) String() string {
 		return "EV_FF_STATUS"
 	default:
 		return "[?? Unknown evType value]"
+	}
+}
+
+func (s evLEDState) String() string {
+	switch s {
+	case EV_LED_NUML:
+		return "EV_LED_NUML"
+	case EV_LED_CAPSL:
+		return "EV_LED_CAPSL"
+	case EV_LED_SCROLLL:
+		return "EV_LED_SCROLLL"
+	case EV_LED_COMPOSE:
+		return "EV_LED_COMPOSE"
+	case EV_LED_KANA:
+		return "EV_LED_KANA"
+	case EV_LED_SLEEP:
+		return "EV_LED_SLEEP"
+	case EV_LED_SUSPEND:
+		return "EV_LED_SUSPEND"
+	case EV_LED_MUTE:
+		return "EV_LED_MUTE"
+	case EV_LED_MISC:
+		return "EV_LED_MISC"
+	case EV_LED_MAIL:
+		return "EV_LED_MAIL"
+	case EV_LED_CHARGING:
+		return "EV_LED_CHARGING"
+	default:
+		return "[?? Invalid evLEDState value]"
 	}
 }

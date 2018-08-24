@@ -80,20 +80,15 @@ type device struct {
 	rel_position  gopi.Point
 	last_position gopi.Point
 
-	// Key presses
+	// Key presses and state
 	key_code   evKeyCode
 	key_action evKeyAction
+	key_state  gopi.KeyState
 	scan_code  uint32
 
 	// Multi-touch support
 	slot  uint32
 	slots []slot
-
-	/*
-		// the current key state, which is a set of OR'd flags
-		state gopi.KeyState
-
-	*/
 
 	// Publisher
 	event.Publisher
@@ -307,9 +302,44 @@ func (this *device) Position() gopi.Point {
 	return this.position
 }
 
+// KeyState gets states (caps lock, shift, scroll lock, num lock, etc)
+func (this *device) KeyState() gopi.KeyState {
+	return this.key_state
+}
+
+// Set key state (or states) to on or off. Will return error for key states
+// which are not modifiable
+func (this *device) SetKeyState(flags gopi.KeyState, state bool) error {
+	for v := gopi.KEYSTATE_MIN; v <= gopi.KEYSTATE_MAX; v++ {
+		// Ignore key states which have not been set
+		if flags&v == 0 {
+			continue
+		}
+		// Set LED state
+		switch v {
+		case gopi.KEYSTATE_SCROLLLOCK:
+			if err := evSetLEDState(this.handle, EV_LED_SCROLLL, state); err != nil {
+				return err
+			}
+		case gopi.KEYSTATE_NUMLOCK:
+			if err := evSetLEDState(this.handle, EV_LED_NUML, state); err != nil {
+				return err
+			}
+		case gopi.KEYSTATE_CAPSLOCK:
+			if err := evSetLEDState(this.handle, EV_LED_CAPSL, state); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("SetKeyState: unsupported: %v", v)
+		}
+	}
+	// Success
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *device) String() string {
-	return fmt.Sprintf("<sys.input.InputDevice>{ name=\"%s\" phys=\"%v\" uniq=\"%v\" type=%v bus=%v position=%v product=0x%04X vendor=0x%04X version=0x%04X capabilities=%v exclusive=%v fd=%v path=%v }", this.name, this.phys, this.uniq, this.device_type, this.bus, this.position, this.product, this.vendor, this.version, this.capabilities, this.exclusive, this.handle.Fd(), this.path)
+	return fmt.Sprintf("<sys.input.InputDevice>{ name=\"%s\" phys=\"%v\" uniq=\"%v\" type=%v bus=%v position=%v product=0x%04X vendor=0x%04X version=0x%04X capabilities=%v key_state=%v exclusive=%v fd=%v path=%v }", this.name, this.phys, this.uniq, this.device_type, this.bus, this.position, this.product, this.vendor, this.version, this.capabilities, this.key_state, this.exclusive, this.handle.Fd(), this.path)
 }

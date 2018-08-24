@@ -136,12 +136,6 @@ func evSetGrabState(handle *os.File, state bool) error {
 	return nil
 }
 
-// Return key states: TODO
-func evGetKeyState(handle *os.File) error {
-	// TODO
-	return nil
-}
-
 // Call ioctl
 func evIoctl(fd uintptr, name uintptr, data unsafe.Pointer) syscall.Errno {
 	_, _, err := syscall.RawSyscall(syscall.SYS_IOCTL, fd, name, uintptr(data))
