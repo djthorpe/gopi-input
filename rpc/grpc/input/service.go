@@ -96,7 +96,7 @@ func (this *service) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Receive events in the background
+// Receive events in the background - MAY NOT BE REQUIRED
 
 func (this *service) receiveEvents() {
 	evt_device := this.input.Subscribe()
@@ -119,6 +119,7 @@ FOR_LOOP:
 // Ping method
 
 func (this *service) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.EmptyReply, error) {
+	this.log.Debug2("<grpc.service.input.Ping>{ }")
 	return &pb.EmptyReply{}, nil
 }
 
@@ -126,7 +127,7 @@ func (this *service) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.EmptyRep
 // Listen for inputmanager events
 
 func (this *service) ListenForInputEvents(_ *pb.EmptyRequest, stream pb.Input_ListenForInputEventsServer) error {
-	this.log.Debug("ListenForInputEvents: Subscribe")
+	this.log.Debug2("<grpc.service.input.ListenForInputEvents>{ }")
 	events := this.input.Subscribe()
 
 FOR_LOOP:
@@ -135,19 +136,18 @@ FOR_LOOP:
 		select {
 		case evt := <-events:
 			if evt == nil {
-				this.log.Warn("ListenForInputEvents: channel closed: closing request")
+				this.log.Warn("<grpc.service.input.ListenForInputEvents> Error: channel closed: closing request")
 				break FOR_LOOP
 			} else if input_evt, ok := evt.(gopi.InputEvent); ok == false {
-				this.log.Warn("ListenForInputEvents: ignoring event: %v", evt)
+				this.log.Warn("<grpc.service.input.ListenForInputEvents> Warning: ignoring event: %v", evt)
 			} else if err := stream.Send(toProtobufInputEvent(input_evt)); err != nil {
-				this.log.Warn("ListenForInputEvents: error sending: %v: closing request", err)
+				this.log.Warn("<grpc.service.input.ListenForInputEvents> Warning: %v: closing request", err)
 				break FOR_LOOP
 			}
 		}
 	}
 
 	// Unsubscribe from events
-	this.log.Debug("ListenForInputEvents: Unsubscribe")
 	this.input.Unsubscribe(events)
 
 	// Return success

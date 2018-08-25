@@ -42,8 +42,6 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 		done <- gopi.DONE
 		return err
 	} else {
-		// Send connection on channel
-		runconn <- conn
 		// Wait until CTRL+C is pressed
 		app.Logger.Info("Waiting for CTRL+C")
 		app.WaitForSignal()
@@ -59,7 +57,6 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 
 func RunLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 	pool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool)
-	done := make(chan struct{})
 
 	if client_ := pool.NewClient("gopi.Input", conn); client_ == nil {
 		return gopi.ErrAppError
