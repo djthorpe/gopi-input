@@ -12,6 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 
 	// Modules
+	_ "github.com/djthorpe/gopi-input/sys/barcode"
 	_ "github.com/djthorpe/gopi-input/sys/input"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
@@ -121,6 +122,8 @@ FOR_LOOP:
 	return nil
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 func GetFilterType(app *gopi.AppInstance) (gopi.InputDeviceType, error) {
 	if device_type, exists := app.AppFlags.GetString("type"); exists == false {
 		return gopi.INPUT_TYPE_ANY, nil
@@ -165,6 +168,8 @@ func GetFilterParameters(app *gopi.AppInstance) (string, gopi.InputDeviceType, g
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	// Type of device
 	if device_name, device_type, device_bus, err := GetFilterParameters(app); err != nil {
@@ -195,7 +200,7 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 }
 
 func main() {
-	config := gopi.NewAppConfig("input")
+	config := gopi.NewAppConfig("input", "barcode")
 	config.AppFlags.FlagBool("watch", false, "Watch for device events")
 	config.AppFlags.FlagString("type", "", fmt.Sprintf("Filter by type of device (%v)", strings.Join(keys_type, ",")))
 	config.AppFlags.FlagString("bus", "", fmt.Sprintf("Filter by one or more device busses (%v)", strings.Join(keys_bus, ",")))
