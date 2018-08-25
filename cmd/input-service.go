@@ -1,23 +1,29 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
-	"github.com/olekukonko/tablewriter"
 
 	// Modules
 	_ "github.com/djthorpe/gopi-input/sys/input"
 	_ "github.com/djthorpe/gopi-input/sys/keymap"
 	_ "github.com/djthorpe/gopi/sys/logger"
+	_ "github.com/djthorpe/gopi/sys/rpc/grpc"
+	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
+
+	// RPC Services
+	_ "github.com/djthorpe/gopi-input/rpc/grpc/input"
 )
 
+/*
 var (
 	start = make(chan struct{})
 )
+*/
 
+/*
 func PrintDevicesTable(devices []gopi.InputDevice) {
 	// Table
 	table := tablewriter.NewWriter(os.Stdout)
@@ -77,9 +83,23 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	done <- gopi.DONE
 	return nil
 }
+*/
 
+func main() {
+	// Create the configuration
+	config := gopi.NewAppConfig("rpc/service/input:grpc")
+
+	// Set the RPCServiceRecord for server discovery
+	config.Service = "input"
+
+	// Run the server and register all the services
+	os.Exit(gopi.RPCServerTool(config))
+}
+
+/*
 func main() {
 	config := gopi.NewAppConfig("input")
 	config.AppFlags.FlagBool("watch", false, "Watch for device events")
 	os.Exit(gopi.CommandLineTool(config, Main, EventLoop))
 }
+*/

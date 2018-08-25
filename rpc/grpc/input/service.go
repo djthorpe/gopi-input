@@ -9,9 +9,13 @@
 package input
 
 import (
+	"context"
+	"fmt"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
+
+	// Modules
 	"github.com/djthorpe/gopi/sys/rpc/grpc"
 
 	// Protocol buffers
@@ -22,11 +26,18 @@ import (
 // TYPES
 
 type Service struct {
-	Server gopi.RPCServer
+	Server       gopi.RPCServer
+	InputManager gopi.InputManager
+	Name         string
+	Type         gopi.InputDeviceType
+	Bus          gopi.InputDeviceBus
 }
 
 type service struct {
-	log gopi.Logger
+	log   gopi.Logger
+	input gopi.InputManager
+
+	done chan struct{}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,13 +45,28 @@ type service struct {
 
 // Open the server
 func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<grpc.service.input>Open{ server=%v}", config.Server)
+	log.Debug("<grpc.service.input>Open{ server=%v input=%v }", config.Server, config.InputManager)
+
+	// Check for bad input parameters
+	if config.Server == nil || config.InputManager == nil {
+		return nil, gopi.ErrBadParameter
+	}
 
 	this := new(service)
 	this.log = log
+	this.input = config.InputManager
+	this.done = make(chan struct{})
 
 	// Register service with GRPC server
 	pb.RegisterInputServer(config.Server.(grpc.GRPCServer).GRPCServer(), this)
+
+	// Get events in the background
+	go this.receiveEvents()
+
+	// Subscribe to input devices
+	if _, err := this.input.OpenDevicesByName(config.Name, config.Type, config.Bus); err != nil {
+		return nil, err
+	}
 
 	// Success
 	return this, nil
@@ -49,22 +75,14 @@ func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
 func (this *service) Close() error {
 	this.log.Debug("<grpc.service.input>Close{}")
 
-	// No resources to release
+	// Signal done and wait for close
+	this.done <- gopi.DONE
+	<-this.done
+
+	// Release resources
+	this.input = nil
 
 	// Success
-	return nil
-}
-
-/*
-////////////////////////////////////////////////////////////////////////////////
-// RPCService implementation
-
-func (this *service) GRPCHook() reflect.Value {
-	return reflect.ValueOf(pb.RegisterGreeterServer)
-}
-
-func (this *service) CancelRequests() error {
-	// No need to cancel any requests since none are streaming
 	return nil
 }
 
@@ -72,18 +90,64 @@ func (this *service) CancelRequests() error {
 // Stringify
 
 func (this *service) String() string {
-	return fmt.Sprintf("grpc.service.helloworld{}")
+	return fmt.Sprintf("grpc.service.input{}")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// SayHello method
+// Receive events in the background
 
-func (this *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	if req.Name == "" {
-		req.Name = "World"
+func (this *service) receiveEvents() {
+	evt_device := this.input.Subscribe()
+
+FOR_LOOP:
+	for {
+		select {
+		case evt := <-evt_device:
+			this.log.Info("evt=%v", evt)
+		case <-this.done:
+			this.log.Info("done")
+			break FOR_LOOP
+		}
 	}
-	return &pb.HelloReply{
-		Message: "Hello, " + req.Name,
-	}, nil
+	this.input.Unsubscribe(evt_device)
+	close(this.done)
 }
-*/
+
+////////////////////////////////////////////////////////////////////////////////
+// Ping method
+
+func (this *service) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.EmptyReply, error) {
+	return &pb.EmptyReply{}, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Listen for inputmanager events
+
+func (this *service) ListenForInputEvents(_ *pb.EmptyRequest, stream pb.Input_ListenForInputEventsServer) error {
+	this.log.Debug("ListenForInputEvents: Subscribe")
+	events := this.input.Subscribe()
+
+FOR_LOOP:
+	// Send until loop is broken
+	for {
+		select {
+		case evt := <-events:
+			if evt == nil {
+				this.log.Warn("ListenForInputEvents: channel closed: closing request")
+				break FOR_LOOP
+			} else if input_evt, ok := evt.(gopi.InputEvent); ok == false {
+				this.log.Warn("ListenForInputEvents: ignoring event: %v", evt)
+			} else if err := stream.Send(toProtobufInputEvent(input_evt)); err != nil {
+				this.log.Warn("ListenForInputEvents: error sending: %v: closing request", err)
+				break FOR_LOOP
+			}
+		}
+	}
+
+	// Unsubscribe from events
+	this.log.Debug("ListenForInputEvents: Unsubscribe")
+	this.input.Unsubscribe(events)
+
+	// Return success
+	return nil
+}

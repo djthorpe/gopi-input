@@ -86,7 +86,9 @@ func (this *manager) Close() error {
 	}
 
 	// Close publisher
+	this.log.Debug("Closing merger")
 	this.Merger.Close()
+	this.log.Debug("Merger closed")
 
 	// Empty
 	this.filepoll = nil

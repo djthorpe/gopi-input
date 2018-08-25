@@ -13,6 +13,6 @@
 
 # Custom
 .DS_Store
-*.sum
-
+go.sum
+*.pb.go
 
