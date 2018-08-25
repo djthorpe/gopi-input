@@ -72,16 +72,15 @@ func (this *Merger) Unmerge(publisher gopi.Publisher) {
 func (this *Merger) Close() {
 	// Close publisher
 	this.Publisher.Close()
-
 	for publisher := range this.publishers {
 		this.Unmerge(publisher)
 	}
+	// Close change channel
 	if this.change != nil {
-		// Close change channel
 		close(this.change)
+		// Wait for done signal
+		<-this.done
 	}
-	// Wait for done signal
-	<-this.done
 	// Empty data structures
 	this.publishers = nil
 	this.in = nil
