@@ -17,8 +17,8 @@ import (
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
-	"github.com/djthorpe/gopi-input/util/event"
 	"github.com/djthorpe/gopi/sys/hw/linux"
+	"github.com/djthorpe/gopi/util/event"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

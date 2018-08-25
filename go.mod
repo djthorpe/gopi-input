@@ -2,10 +2,9 @@ module github.com/djthorpe/gopi-input
 
 require (
 	github.com/cenkalti/backoff v2.0.0+incompatible // indirect
-	github.com/djthorpe/gopi v0.0.0-20180512165351-9f3967d350b4
+	github.com/djthorpe/gopi v0.0.0-20180825133617-6a041127ea20
 	github.com/djthorpe/zeroconf v0.0.0-20171029195637-8219919fca89 // indirect
 	github.com/golang/protobuf v1.2.0
-	github.com/mattn/go-runewidth v0.0.3 // indirect
 	github.com/miekg/dns v1.0.8 // indirect
 	github.com/olekukonko/tablewriter v0.0.0-20180506121414-d4647c9c7a84
 	golang.org/x/crypto v0.0.0-20180820150726-614d502a4dac // indirect
