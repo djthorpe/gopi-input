@@ -28,9 +28,9 @@ import (
 type Service struct {
 	Server       gopi.RPCServer
 	InputManager gopi.InputManager
-	Name         string
-	Type         gopi.InputDeviceType
-	Bus          gopi.InputDeviceBus
+	DeviceName   string
+	DeviceType   gopi.InputDeviceType
+	DeviceBus    gopi.InputDeviceBus
 }
 
 type service struct {
@@ -45,7 +45,7 @@ type service struct {
 
 // Open the server
 func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<grpc.service.input>Open{ server=%v input=%v }", config.Server, config.InputManager)
+	log.Debug("<grpc.service.input>Open{ server=%v input=%v device_name='%v' device_type=%v device_bus=%v  }", config.Server, config.InputManager, config.DeviceName, config.DeviceType, config.DeviceBus)
 
 	// Check for bad input parameters
 	if config.Server == nil || config.InputManager == nil {
@@ -64,8 +64,10 @@ func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
 	go this.receiveEvents()
 
 	// Subscribe to input devices
-	if _, err := this.input.OpenDevicesByName(config.Name, config.Type, config.Bus); err != nil {
+	if devices, err := this.input.OpenDevicesByName(config.DeviceName, config.DeviceType, config.DeviceBus); err != nil {
 		return nil, err
+	} else {
+		this.log.Debug("Number of devices opened: %v", len(devices))
 	}
 
 	// Success
