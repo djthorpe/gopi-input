@@ -23,6 +23,11 @@ import (
 	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
 )
 
+var (
+	// start signal
+	start = make(chan gopi.RPCClientConn)
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func Main(app *gopi.AppInstance, done chan<- struct{}) error {
@@ -42,6 +47,8 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 		done <- gopi.DONE
 		return err
 	} else {
+		// Send connection
+		start <- conn
 		// Wait until CTRL+C is pressed
 		app.Logger.Info("Waiting for CTRL+C")
 		app.WaitForSignal()
@@ -58,17 +65,24 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 func RunLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 	pool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool)
 
-	if client_ := pool.NewClient("gopi.Input", conn); client_ == nil {
-		return gopi.ErrAppError
-	} else if client, ok := client_.(*input.Client); ok == false {
-		return gopi.ErrAppError
-	} else if err := client.Ping(); err != nil {
-		return err
-	} else if err := client.ListenForInputEvents(done); err != nil { // method blocks until 'done' is sent
-		return err
-	} else {
+	// Obtain the connection
+	select {
+	case <-done:
 		return nil
+	case conn := <-start:
+		if client_ := pool.NewClient("gopi.Input", conn); client_ == nil {
+			return gopi.ErrAppError
+		} else if client, ok := client_.(*input.Client); ok == false {
+			return gopi.ErrAppError
+		} else if err := client.Ping(); err != nil {
+			return err
+		} else if err := client.ListenForInputEvents(done); err != nil { // method blocks until 'done' is sent
+			return err
+		}
 	}
+
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

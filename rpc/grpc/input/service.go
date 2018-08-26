@@ -14,6 +14,7 @@ import (
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/util/event"
 
 	// Modules
 	"github.com/djthorpe/gopi/sys/rpc/grpc"
@@ -37,7 +38,8 @@ type service struct {
 	log   gopi.Logger
 	input gopi.InputManager
 
-	done chan struct{}
+	// Implements publisher for when the service is stopped
+	event.Publisher
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,7 +47,7 @@ type service struct {
 
 // Open the server
 func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<grpc.service.input>Open{ server=%v input=%v device_name='%v' device_type=%v device_bus=%v  }", config.Server, config.InputManager, config.DeviceName, config.DeviceType, config.DeviceBus)
+	log.Debug("<grpc.service.input.Open>{ server=%v input=%v device_name='%v' device_type=%v device_bus=%v  }", config.Server, config.InputManager, config.DeviceName, config.DeviceType, config.DeviceBus)
 
 	// Check for bad input parameters
 	if config.Server == nil || config.InputManager == nil {
@@ -55,13 +57,9 @@ func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
 	this := new(service)
 	this.log = log
 	this.input = config.InputManager
-	this.done = make(chan struct{})
 
 	// Register service with GRPC server
 	pb.RegisterInputServer(config.Server.(grpc.GRPCServer).GRPCServer(), this)
-
-	// Get events in the background
-	go this.receiveEvents()
 
 	// Subscribe to input devices
 	if devices, err := this.input.OpenDevicesByName(config.DeviceName, config.DeviceType, config.DeviceBus); err != nil {
@@ -75,11 +73,10 @@ func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
 }
 
 func (this *service) Close() error {
-	this.log.Debug("<grpc.service.input>Close{}")
+	this.log.Debug("<grpc.service.input.Close>{}")
 
-	// Signal done and wait for close
-	this.done <- gopi.DONE
-	<-this.done
+	// Close publisher
+	this.Publisher.Close()
 
 	// Release resources
 	this.input = nil
@@ -96,23 +93,16 @@ func (this *service) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Receive events in the background - MAY NOT BE REQUIRED
+// Cancel all streaming requests
 
-func (this *service) receiveEvents() {
-	evt_device := this.input.Subscribe()
+func (this *service) CancelRequests() error {
+	this.log.Debug2("<grpc.service.input.CancelRequests>{}")
 
-FOR_LOOP:
-	for {
-		select {
-		case evt := <-evt_device:
-			this.log.Info("evt=%v", evt)
-		case <-this.done:
-			this.log.Info("done")
-			break FOR_LOOP
-		}
-	}
-	this.input.Unsubscribe(evt_device)
-	close(this.done)
+	// Cancel any streaming requests
+	this.Publisher.Emit(event.NullEvent)
+
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -128,10 +118,14 @@ func (this *service) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.EmptyRep
 
 func (this *service) ListenForInputEvents(_ *pb.EmptyRequest, stream pb.Input_ListenForInputEventsServer) error {
 	this.log.Debug2("<grpc.service.input.ListenForInputEvents>{ }")
+
+	// Subscribe to events
 	events := this.input.Subscribe()
+	cancel_requests := this.Publisher.Subscribe()
 
 FOR_LOOP:
-	// Send until loop is broken
+	// Send until loop is broken - either due to stream error
+	// or request cancellation
 	for {
 		select {
 		case evt := <-events:
@@ -144,11 +138,16 @@ FOR_LOOP:
 				this.log.Warn("<grpc.service.input.ListenForInputEvents> Warning: %v: closing request", err)
 				break FOR_LOOP
 			}
+		case <-cancel_requests:
+			break FOR_LOOP
 		}
 	}
 
 	// Unsubscribe from events
 	this.input.Unsubscribe(events)
+	this.Publisher.Unsubscribe(cancel_requests)
+
+	this.log.Debug2("<grpc.service.input.ListenForInputEvents> Ended")
 
 	// Return success
 	return nil

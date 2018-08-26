@@ -19,7 +19,7 @@ import "github.com/djthorpe/gopi"
 func init() {
 	// Register InputManager
 	gopi.RegisterModule(gopi.Module{
-		Name:     "keymap/manager",
+		Name:     "sys/keymap",
 		Requires: []string{"input"},
 		Type:     gopi.MODULE_TYPE_KEYMAP,
 		Config: func(config *gopi.AppConfig) {
