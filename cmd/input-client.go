@@ -14,10 +14,10 @@ import (
 	"time"
 
 	// Frameworks
-	gopi "github.com/djthorpe/gopi/v2"
+	gopi "github.com/djthorpe/gopi"
+	input "github.com/djthorpe/gopi-input/rpc/grpc/input"
 
 	// Modules
-	input "github.com/djthorpe/gopi-input/rpc/grpc/input"
 	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/rpc/grpc"
 	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
