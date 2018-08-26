@@ -14,7 +14,7 @@ import (
 	"time"
 
 	// Frameworks
-	gopi "github.com/djthorpe/gopi"
+	gopi "github.com/djthorpe/gopi/v2"
 
 	// Modules
 	input "github.com/djthorpe/gopi-input/rpc/grpc/input"

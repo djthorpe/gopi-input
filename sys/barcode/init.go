@@ -9,10 +9,9 @@
 
 package barcode
 
-import (
-	// Frameworks
-	"github.com/djthorpe/gopi"
-)
+import "github.com/djthorpe/gopi"
+
+// Frameworks
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT

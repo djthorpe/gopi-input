@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"io"
 
-	// Framework
+	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 	grpc "github.com/djthorpe/gopi/sys/rpc/grpc"
 

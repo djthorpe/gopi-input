@@ -4,9 +4,9 @@ import (
 	"os"
 
 	// Frameworks
-	"github.com/djthorpe/gopi"
 
 	// Modules
+	"github.com/djthorpe/gopi"
 	_ "github.com/djthorpe/gopi-input/sys/input"
 	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/rpc/grpc"

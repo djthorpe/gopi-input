@@ -8,10 +8,11 @@ import (
 	"sync"
 
 	// Frameworks
-	"github.com/djthorpe/gopi"
+
 	"github.com/olekukonko/tablewriter"
 
 	// Modules
+	"github.com/djthorpe/gopi"
 	_ "github.com/djthorpe/gopi-input/sys/barcode"
 	_ "github.com/djthorpe/gopi-input/sys/input"
 	_ "github.com/djthorpe/gopi/sys/logger"

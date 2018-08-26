@@ -10,9 +10,9 @@ package input
 
 import (
 	// Frameworks
-	"github.com/djthorpe/gopi"
 
 	// Protocol buffers
+	"github.com/djthorpe/gopi"
 	pb "github.com/djthorpe/gopi-input/rpc/protobuf/input"
 	ptype "github.com/golang/protobuf/ptypes"
 )
