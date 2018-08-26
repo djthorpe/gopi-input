@@ -166,7 +166,37 @@ func (this *manager) CloseDevice(device gopi.InputDevice) error {
 	// Unsubscribe from events
 	this.Merger.Unmerge(device)
 
+	// Close device
+	if err := device.Close(); err != nil {
+		return err
+	}
+
+	// Remove device from array (nil)
+	this.devices[found] = nil
+
+	// Return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RETURN OPENED DEVICES
+
+func (this *manager) GetOpenDevices() []gopi.InputDevice {
+	devices := make([]gopi.InputDevice, 0, len(this.devices))
+	for _, device := range this.devices {
+		if device != nil {
+			devices = append(devices, device)
+		}
+	}
+	return devices
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ADD NEW INPUT DEVICE
+
+func (this *manager) AddDevice(device gopi.InputDevice) error {
+	// TODO: This method is currently not implemented
+	return gopi.ErrNotImplemented
 }
 
 ////////////////////////////////////////////////////////////////////////////////

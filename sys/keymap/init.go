@@ -9,9 +9,10 @@
 
 package keymap
 
-import "github.com/djthorpe/gopi"
-
-// Frameworks
+import (
+	// Frameworks
+	"github.com/djthorpe/gopi"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT

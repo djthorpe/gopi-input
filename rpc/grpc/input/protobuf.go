@@ -10,9 +10,9 @@ package input
 
 import (
 	// Frameworks
+	gopi "github.com/djthorpe/gopi"
 
 	// Protocol buffers
-	"github.com/djthorpe/gopi"
 	pb "github.com/djthorpe/gopi-input/rpc/protobuf/input"
 	ptype "github.com/golang/protobuf/ptypes"
 )
@@ -34,9 +34,19 @@ func toProtobufInputEvent(evt gopi.InputEvent) *pb.InputEvent {
 	return input_event
 }
 
+func fromProtobufInputEvent(evt *pb.InputEvent) gopi.InputEvent {
+	// TODO
+	return nil
+}
+
 func toProtobufPoint(pt gopi.Point) *pb.Point {
 	return &pb.Point{
 		X: pt.X,
 		Y: pt.Y,
 	}
+}
+
+func toProtobufInputDevice(device gopi.InputDevice) *pb.InputDevice {
+	input_device := &pb.InputDevice{}
+	return input_device
 }

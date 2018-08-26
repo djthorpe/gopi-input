@@ -114,7 +114,7 @@ func (this *service) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.EmptyRep
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Listen for inputmanager events
+// Listen for InputManager events
 
 func (this *service) ListenForInputEvents(_ *pb.EmptyRequest, stream pb.Input_ListenForInputEventsServer) error {
 	this.log.Debug2("<grpc.service.input.ListenForInputEvents>{ }")
@@ -151,4 +151,15 @@ FOR_LOOP:
 
 	// Return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Return opened devices
+
+func (this *service) Devices(ctx context.Context, _ *pb.EmptyRequest) (*pb.InputDevices, error) {
+	this.log.Debug2("<grpc.service.input.Devices>{ }")
+	devices := this.input.GetOpenDevices()
+	return &pb.InputDevices{
+		Device: make([]*pb.InputDevice, len(devices)),
+	}, nil
 }

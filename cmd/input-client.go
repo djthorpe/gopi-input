@@ -49,13 +49,11 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	} else {
 		// Send connection
 		start <- conn
+
 		// Wait until CTRL+C is pressed
 		app.Logger.Info("Waiting for CTRL+C")
 		app.WaitForSignal()
 		done <- gopi.DONE
-		if err := pool.Disconnect(conn); err != nil {
-			return err
-		}
 	}
 
 	// Success

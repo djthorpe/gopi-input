@@ -16,6 +16,7 @@ import (
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 	grpc "github.com/djthorpe/gopi/sys/rpc/grpc"
+	event "github.com/djthorpe/gopi/util/event"
 
 	// Protocol buffers
 	pb "github.com/djthorpe/gopi-input/rpc/protobuf/input"
@@ -27,13 +28,18 @@ import (
 type Client struct {
 	pb.InputClient
 	conn gopi.RPCClientConn
+	event.Publisher
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func NewInputClient(conn gopi.RPCClientConn) gopi.RPCClient {
-	return &Client{pb.NewInputClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn}
+	return &Client{pb.NewInputClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn, event.Publisher{}}
+}
+
+func (this *Client) Close() {
+	this.Publisher.Close()
 }
 
 func (this *Client) NewContext() context.Context {
@@ -71,9 +77,17 @@ func (this *Client) ListenForInputEvents(done <-chan struct{}) error {
 	this.conn.Lock()
 	defer this.conn.Unlock()
 
+	// Create a context with a cancel function, and wait for the 'done'
+	// in background
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-done
+		cancel()
+	}()
+
 	// Receive a stream of messages, when done is received then
 	// context.Cancel() is called to end the loop, which returns nil
-	if stream, err := this.InputClient.ListenForInputEvents(this.NewContext(), &pb.EmptyRequest{}); err != nil {
+	if stream, err := this.InputClient.ListenForInputEvents(ctx, &pb.EmptyRequest{}); err != nil {
 		return err
 	} else {
 		for {
@@ -82,13 +96,25 @@ func (this *Client) ListenForInputEvents(done <-chan struct{}) error {
 			} else if err != nil {
 				return err
 			} else {
-				fmt.Printf("Event=%v\n", input_event)
+				this.Publisher.Emit(fromProtobufInputEvent(input_event))
 			}
 		}
 	}
 
 	// Success
 	return nil
+}
+
+func (this *Client) Devices() error {
+	this.conn.Lock()
+	defer this.conn.Unlock()
+
+	if devices, err := this.InputClient.Devices(this.NewContext(), &pb.EmptyRequest{}); err != nil {
+		return err
+	} else {
+		fmt.Println(devices)
+		return nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
