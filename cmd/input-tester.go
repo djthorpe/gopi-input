@@ -8,11 +8,10 @@ import (
 	"sync"
 
 	// Frameworks
-	"github.com/djthorpe/gopi"
-	"github.com/olekukonko/tablewriter"
+	gopi "github.com/djthorpe/gopi"
+	tablewriter "github.com/olekukonko/tablewriter"
 
 	// Modules
-	_ "github.com/djthorpe/gopi-input/sys/barcode"
 	_ "github.com/djthorpe/gopi-input/sys/input"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
@@ -62,11 +61,21 @@ func stringForEvent(evt gopi.InputEvent) string {
 
 func stringForKeyPosition(evt gopi.InputEvent) string {
 	if evt.EventType() == gopi.INPUT_EVENT_RELPOSITION {
-		return fmt.Sprint(evt.Relative())
+		return fmt.Sprintf("{%v,%v} => {%v,%v}", evt.Relative().X, evt.Relative().Y, evt.Position().X, evt.Position().Y)
 	} else if evt.EventType() == gopi.INPUT_EVENT_ABSPOSITION {
 		return fmt.Sprint(evt.Position())
 	} else {
 		return strings.TrimPrefix(fmt.Sprint(evt.Keycode()), "KEYCODE_")
+	}
+}
+
+func stringForDeviceState(evt gopi.InputEvent) string {
+	device := evt.Source().(gopi.InputDevice)
+	if device.Type() != gopi.INPUT_TYPE_KEYBOARD {
+		return "N/A"
+	} else {
+		key_state := fmt.Sprint(device.KeyState())
+		return strings.ToLower(strings.Replace(key_state, "KEYSTATE_", "", -1))
 	}
 }
 
@@ -88,10 +97,10 @@ func PrintDevicesTable(devices []gopi.InputDevice) {
 
 func PrintInputEvent(evt gopi.InputEvent, once *sync.Once) {
 	once.Do(func() {
-		fmt.Printf("%-25s %-25s %-15s\n", "DEVICE", "EVENT", "KEY/POSITION")
-		fmt.Printf("%-25s %-25s %-15s\n", strings.Repeat("-", 25), strings.Repeat("-", 25), strings.Repeat("-", 15))
+		fmt.Printf("%-25s %-25s %-15s %-15s\n", "DEVICE", "KEY/POSITION", "EVENT", "STATE")
+		fmt.Printf("%-25s %-25s %-15s %-15s\n", strings.Repeat("-", 25), strings.Repeat("-", 25), strings.Repeat("-", 15), strings.Repeat("-", 15))
 	})
-	fmt.Printf("%-25s %-25s %-15s\n", stringForDevice(evt), stringForEvent(evt), stringForKeyPosition(evt))
+	fmt.Printf("%-25s %-25s %-15s %-15s\n", stringForDevice(evt), stringForKeyPosition(evt), stringForEvent(evt), stringForDeviceState(evt))
 }
 
 func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
@@ -200,7 +209,7 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 }
 
 func main() {
-	config := gopi.NewAppConfig("input", "barcode")
+	config := gopi.NewAppConfig("input")
 	config.AppFlags.FlagBool("watch", false, "Watch for device events")
 	config.AppFlags.FlagString("type", "", fmt.Sprintf("Filter by type of device (%v)", strings.Join(keys_type, ",")))
 	config.AppFlags.FlagString("bus", "", fmt.Sprintf("Filter by one or more device busses (%v)", strings.Join(keys_bus, ",")))

@@ -12,7 +12,6 @@
 package input
 
 import (
-	// Frameworks
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/sys/hw/linux"
 )
