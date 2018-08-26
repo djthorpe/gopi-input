@@ -146,13 +146,18 @@ func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
 
 	// Mouse and keyboard movements
 	if this.rel_position.Equals(gopi.ZeroPoint) == false {
+		// Update position
+		this.last_position = this.position
+		this.position.X += this.rel_position.X
+		this.position.Y += this.rel_position.Y
+		// Set event values
 		evt.event = gopi.INPUT_EVENT_RELPOSITION
 		evt.rel_position = this.rel_position
-		this.rel_position = gopi.ZeroPoint
-		this.last_position = this.position
+		evt.position = this.position
 	} else if this.position.Equals(this.last_position) == false {
 		evt.event = gopi.INPUT_EVENT_ABSPOSITION
-		this.last_position = this.position
+		evt.position = this.position
+		evt.rel_position = gopi.ZeroPoint
 	} else if this.key_action == EV_VALUE_KEY_UP {
 		evt.event = gopi.INPUT_EVENT_KEYRELEASE
 		evt.key_code = gopi.KeyCode(this.key_code)
@@ -231,15 +236,17 @@ func (this *device) evDecodeKey(raw_event *evEvent) {
 		if this.key_action == EV_VALUE_KEY_DOWN || this.key_action == EV_VALUE_KEY_REPEAT {
 			this.key_state |= key_state
 		} else if this.key_action == EV_VALUE_KEY_UP {
-			this.key_state &= (gopi.KEYSTATE_MAX ^ key_state)
+			this.key_state ^= key_state
 		}
 	}
 }
 
 func (this *device) evDecodeAbs(raw_event *evEvent) gopi.InputEvent {
 	if raw_event.Code == EV_CODE_X {
+		this.last_position.X = this.position.X
 		this.position.X = float32(int32(raw_event.Value))
 	} else if raw_event.Code == EV_CODE_Y {
+		this.last_position.Y = this.position.Y
 		this.position.Y = float32(int32(raw_event.Value))
 	} else if raw_event.Code == EV_CODE_SLOT {
 		this.slot = raw_event.Value
@@ -293,10 +300,8 @@ func (this *device) evDecodeAbsTouch(raw_event *evEvent) gopi.InputEvent {
 func (this *device) evDecodeRel(raw_event *evEvent) {
 	switch raw_event.Code {
 	case EV_CODE_X:
-		this.position.X = this.position.X + float32(int32(raw_event.Value))
 		this.rel_position.X = float32(int32(raw_event.Value))
 	case EV_CODE_Y:
-		this.position.Y = this.position.Y + float32(int32(raw_event.Value))
 		this.rel_position.Y = float32(int32(raw_event.Value))
 	default:
 		this.log.Warn("evDecodeRel: %v Ignoring code %v", raw_event.Type, raw_event.Code)

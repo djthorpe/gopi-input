@@ -303,6 +303,11 @@ func (this *device) Position() gopi.Point {
 	return this.position
 }
 
+func (this *device) SetPosition(pt gopi.Point) {
+	this.position.X = pt.X
+	this.position.Y = pt.Y
+}
+
 // KeyState gets states (caps lock, shift, scroll lock, num lock, etc)
 func (this *device) KeyState() gopi.KeyState {
 	return this.key_state
@@ -332,6 +337,12 @@ func (this *device) SetKeyState(flags gopi.KeyState, state bool) error {
 			}
 		default:
 			return fmt.Errorf("SetKeyState: unsupported: %v", v)
+		}
+		// Update key_state
+		if state {
+			this.key_state |= v
+		} else {
+			this.key_state ^= v
 		}
 	}
 	// Success
