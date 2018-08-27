@@ -76,27 +76,20 @@ and process them. At present the input manager emits events which
 conform to the gopi.InputEvent interface. The concepts for any emitted
 event are:
 
-| Event Data | Description | Event Type |
-| ---------- | ----------- | ---------- |
-| Timestamp()| provides an increasing counter of when an event happened. You might want to use this information to determine if an event is a single click, double click, etc. | ddd |
-
-
-
-* ____ 
-* __DeviceType()__ provides information on the type of device emitting the event,
-  for example, Keyboard, Mouse, Touchscreen.
-* __EventType()__ provides information on the type of event. For example, key press
-  release, mouse move, and so forth.
-* __Device()__ provides a unique identifier for the device.
-* __KeyCode()__ provides the code which key was pressed
-* __KeyState()__ provides the current state of certain toggle keys (shift, control, alt and
-  so forth)
-* __ScanCode()__ provides the raw code for the key, which usually relates to the key position
-  on the keyboard
-* __Position()__ provides the absolute position recorded
-* __Relative()__ provides the relative movement for a mouse since the last mouse movement
-* __Slot()__ provides the slot number of a touchscreen event, where a touchscreen supports
-  multitouch events (when more than one touch happens simultaneously on a screen)
+| Event Data    | Event Type  | Description |
+| ------------- | ----------- | ----------- |
+| Timestamp()   | All         | Increasing counter of when an event happened. You might want to use this information to determine if an event is a single click, double click, etc. |
+| DeviceType()  | All         | Information on the type of device emitting the event,
+  for example, Keyboard, Mouse, Touchscreen |
+| Device()      | All         | Unique identifier for the device emitting the event |
+| EventType()   | All         | Type of event. For example, key press
+  release, mouse move, and so forth |
+| KeyCode()     | INPUT_EVENT_KEYPRESS, INPUT_EVENT_KEYRELEASE, INPUT_EVENT_KEYREPEAT, INPUT_EVENT_TOUCHPRESS, INPUT_EVENT_TOUCHRELEASE | Provides the code which key was pressed |
+| KeyState()    | All        | Current state of certain toggle keys (Shift, Control, Alt and so forth) |
+| ScanCode()    | INPUT_EVENT_KEYPRESS, INPUT_EVENT_KEYRELEASE, INPUT_EVENT_KEYREPEAT | Raw code for the key, which usually relates to the key position on the keyboard |
+| Position()    | INPUT_EVENT_ABSPOSITION, INPUT_EVENT_RELPOSITION, INPUT_EVENT_TOUCHPOSITION | Absolute position recorded |
+| Relative()    | INPUT_EVENT_RELPOSITION | Relative movement for a mouse since the last mouse movement |
+| Slot()        | INPUT_EVENT_TOUCHPRESS, INPUT_EVENT_TOUCHRELEASE | Slot number of a touchscreen event, where a touchscreen supports multitouch events (when more than one touch happens simultaneously on a screen) |
 
 See the interface definitions for [gopi](https://github.com/djthorpe/gopi/blob/master/input.go)
 for more information on input events.
