@@ -27,7 +27,131 @@ on a set of rules. For example, the 'A' key pressed whilst the shift key is pres
 result in the upper-case 'A' rune event being published, and so forth. You can
 create, modify and delete keymap files through this module.
 
-## Input Tester
+## Using the Input Manager
+
+You create an input manager by importing the module into your code and then
+specifying you want the input manager module. For example:
+
+```
+package main
+
+import (
+	// Frameworks
+	gopi "github.com/djthorpe/gopi"
+
+	// Import Input Manager
+	_ "github.com/djthorpe/gopi-input/sys/input"
+)
+
+func Main(app *gopi.AppInstance, done chan<- struct{}) error {
+    // Open all devices 
+    if _, err := app.Input.OpenDevicesByName("",gopi.INPUT_TYPE_ANY,gopi.INPUT_BUS_ANY); err != nil {
+		return err
+	}
+    // Assuming there were some devices opened, subscribe to events
+    // from the input manager
+    events := app.Input.Subscribe()
+    // Wait for a single event and print it out
+    select {
+        case evt := <- event.(gopi.InputEvent):
+            fmt.Println(evt)
+    }
+    // Unsubscribe from input manager events
+    app.Input.Unsubscribe(events)
+    // Return success
+	return nil
+}
+
+func main() {
+    // We want to use the input manager
+	config := gopi.NewAppConfig("input")
+    // Start main loop
+	os.Exit(gopi.CommandLineTool(config, Main))
+}
+```
+
+In reality, your code might use a `Main` function to set up the
+devices and a `RunLoop` background function to subscribe to events
+and process them. At present the input manager returns events which
+conform to the following interface:
+
+```
+type InputEvent interface {
+	Event
+
+	// Timestamp of event
+	Timestamp() time.Duration
+
+	// Type of device which has created the event
+	DeviceType() InputDeviceType
+
+	// Event type
+	EventType() InputEventType
+
+	// Device identifier
+	Device() uint32
+
+	// Key or mouse button press or release
+	KeyCode() KeyCode
+
+	// Modifier key state (caps lock, shift, alt, etc)
+	KeyState() KeyState
+
+	// Key scancode
+	ScanCode() uint32
+
+	// Absolute cursor position
+	Position() Point
+
+	// Relative change in position
+	Relative() Point
+
+	// Multi-touch slot identifier
+	Slot() uint
+}
+```
+
+The concepts for the event here are:
+
+* __Timestamp()__ provides an increasing counter of when an event happened. You
+  might want to use this information to determine if an event is a single click,
+  double click, etc.
+* __DeviceType()__ provides information on the type of device emitting the event,
+  for example, Keyboard, Mouse, Touchscreen.
+* __EventType()__ provides information on the type of event. For example, key press
+  release, mouse move, and so forth.
+* __Device()__ provides a unique identifier for the device.
+* __KeyCode()__ provides the code which key was pressed
+* __KeyState()__ provides the current state of certain toggle keys (shift, control, alt and
+  so forth)
+* __ScanCode()__ provides the raw code for the key, which usually relates to the key position
+  on the keyboard
+* __Position()__ provides the absolute position recorded
+* __Relative()__ provides the relative movement for a mouse since the last mouse movement
+* __Slot()__ provides the slot number of a touchscreen event, where a touchscreen supports
+  multitouch events (when more than one touch happens simultaneously on a screen)
+
+See the interface definitions for [gopi](https://github.com/djthorpe/gopi/blob/master/input.go)
+for more information on input events.
+
+## Features and Bugs
+
+At the moment the following features are in progress:
+
+* Implement the `AddDevice` method for the InputManager
+* Deal with the case where devices are added and removed whilst the software
+  is running
+* Provide events for when devices are added and removed so that they can
+  be consumed and more devices opened.
+* Implement the keymap module which translates key presses into runes.
+* Implement a barcode reading module which validates barcodes and perhaps
+  looks up products using an API
+
+I'd appreciate it if you filed feature requests and bugs on [github](https://github.com/djthorpe/gopi-input/issues)
+
+## Examples
+
+### Input Tester
 
 The first example is the `input-tester` which allows you to view input devices
 and events. In order to build on Linux:
@@ -106,7 +230,7 @@ FT5406 [touchscreen]      BTNTOUCH                  TOUCHRELEASE    N/A
 FT5406 [touchscreen]      gopi.Point{ 362.0,145.0 } ABSPOSITION     N/A       
 ```
 
-## Input Microservice
+### Input Microservice
 
 The input microservice emits input events to any connected microservice
 clients using gRPC. The [protobuf file](https://github.com/djthorpe/gopi-input/blob/master/rpc/protobuf/input/input.proto) defines how a client should interact with the service.
@@ -182,7 +306,7 @@ You will receive a warning that "_Microservice discovery is not enabled, continu
 this simply means that microservice discovery is not enabled. Since you specified a port
 you can use this port number in your client when connecting.
 
-## Input Client
+### Input Client
 
 There is a client which can connect to the input microservice. You can install it as
 follows:
@@ -234,26 +358,3 @@ keyboard                  O                         KEYRELEASE      none
 
 Use the `-rpc.insecure` flag on the command line if you don't use SSL
 for communication.
-
-## Features and Bugs
-
-I'd appreciate it if you filed feature requests and bugs on [github](https://github.com/djthorpe/gopi-input/issues).
-At the moment the following features are in progress:
-
-* Implement the `AddDevice` method for the InputManager
-* Deal with the case where devices are added and removed whilst the software
-  is running
-* Provide events for when devices are added and removed so that they can
-  be consumed and more devices opened.
-* Implement the keymap module which translates key presses into runes.
-* Implement a barcode reading module which validates barcodes and perhaps
-  looks up products using an API
-
-
-
-
-
-
-
-
-
