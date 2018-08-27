@@ -4,13 +4,12 @@ import (
 	"os"
 
 	// Frameworks
+	"github.com/djthorpe/gopi"
 
 	// Modules
-	"github.com/djthorpe/gopi"
 	_ "github.com/djthorpe/gopi-input/sys/input"
+	_ "github.com/djthorpe/gopi-rpc/sys/grpc"
 	_ "github.com/djthorpe/gopi/sys/logger"
-	_ "github.com/djthorpe/gopi/sys/rpc/grpc"
-	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
 
 	// RPC Services
 	_ "github.com/djthorpe/gopi-input/rpc/grpc/input"
@@ -20,7 +19,7 @@ import (
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("rpc/service/input:grpc")
+	config := gopi.NewAppConfig("rpc/service/input")
 
 	// Set the RPCServiceRecord for server discovery
 	config.Service = "input"

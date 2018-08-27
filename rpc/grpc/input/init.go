@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/djthorpe/gopi"
 	// Frameworks
+	"github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ var (
 func init() {
 	// Register rpc/service/input
 	gopi.RegisterModule(gopi.Module{
-		Name:     "rpc/service/input:grpc",
+		Name:     "rpc/service/input",
 		Type:     gopi.MODULE_TYPE_SERVICE,
 		Requires: []string{"rpc/server", "input"},
 		Config: func(config *gopi.AppConfig) {
@@ -90,7 +90,7 @@ func init() {
 
 	// Register rpc/client/input
 	gopi.RegisterModule(gopi.Module{
-		Name:     "rpc/client/input:grpc",
+		Name:     "rpc/client/input",
 		Type:     gopi.MODULE_TYPE_CLIENT,
 		Requires: []string{"rpc/clientpool"},
 		Run: func(app *gopi.AppInstance, _ gopi.Driver) error {

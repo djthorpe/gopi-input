@@ -18,9 +18,8 @@ import (
 	input "github.com/djthorpe/gopi-input/rpc/grpc/input"
 
 	// Modules
+	_ "github.com/djthorpe/gopi-rpc/sys/grpc"
 	_ "github.com/djthorpe/gopi/sys/logger"
-	_ "github.com/djthorpe/gopi/sys/rpc/grpc"
-	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
 )
 
 var (
@@ -87,7 +86,7 @@ func RunLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("rpc/client/input:grpc")
+	config := gopi.NewAppConfig("rpc/client/input")
 
 	// Set the RPCServiceRecord for server discovery
 	config.Service = "input"

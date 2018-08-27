@@ -15,7 +15,7 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
-	grpc "github.com/djthorpe/gopi/sys/rpc/grpc"
+	grpc "github.com/djthorpe/gopi-rpc/sys/grpc"
 	event "github.com/djthorpe/gopi/util/event"
 
 	// Protocol buffers
