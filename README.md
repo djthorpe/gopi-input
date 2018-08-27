@@ -79,11 +79,9 @@ event are:
 | Event Data    | Event Type  | Description |
 | ------------- | ----------- | ----------- |
 | Timestamp()   | All         | Increasing counter of when an event happened. You might want to use this information to determine if an event is a single click, double click, etc. |
-| DeviceType()  | All         | Information on the type of device emitting the event,
-  for example, Keyboard, Mouse, Touchscreen |
+| DeviceType()  | All         | Information on the type of device emitting the event, for example, Keyboard, Mouse, Touchscreen |
 | Device()      | All         | Unique identifier for the device emitting the event |
-| EventType()   | All         | Type of event. For example, key press
-  release, mouse move, and so forth |
+| EventType()   | All         | Type of event. For example, key press release, mouse move, and so forth |
 | KeyCode()     | INPUT_EVENT_KEYPRESS, INPUT_EVENT_KEYRELEASE, INPUT_EVENT_KEYREPEAT, INPUT_EVENT_TOUCHPRESS, INPUT_EVENT_TOUCHRELEASE | Provides the code which key was pressed |
 | KeyState()    | All        | Current state of certain toggle keys (Shift, Control, Alt and so forth) |
 | ScanCode()    | INPUT_EVENT_KEYPRESS, INPUT_EVENT_KEYRELEASE, INPUT_EVENT_KEYREPEAT | Raw code for the key, which usually relates to the key position on the keyboard |
