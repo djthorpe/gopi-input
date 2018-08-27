@@ -16,7 +16,6 @@ import (
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 	grpc "github.com/djthorpe/gopi-rpc/sys/grpc"
-	event "github.com/djthorpe/gopi/util/event"
 
 	// Protocol buffers
 	pb "github.com/djthorpe/gopi-input/rpc/protobuf/input"
@@ -28,18 +27,13 @@ import (
 type Client struct {
 	pb.InputClient
 	conn gopi.RPCClientConn
-	event.Publisher
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func NewInputClient(conn gopi.RPCClientConn) gopi.RPCClient {
-	return &Client{pb.NewInputClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn, event.Publisher{}}
-}
-
-func (this *Client) Close() {
-	this.Publisher.Close()
+	return &Client{pb.NewInputClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn}
 }
 
 func (this *Client) NewContext() context.Context {
@@ -73,7 +67,7 @@ func (this *Client) Ping() error {
 	}
 }
 
-func (this *Client) ListenForInputEvents(done <-chan struct{}) error {
+func (this *Client) ListenForInputEvents(done <-chan struct{}, events chan<- gopi.InputEvent) error {
 	this.conn.Lock()
 	defer this.conn.Unlock()
 
@@ -91,12 +85,14 @@ func (this *Client) ListenForInputEvents(done <-chan struct{}) error {
 		return err
 	} else {
 		for {
-			if input_event, err := stream.Recv(); err == io.EOF {
+			if input_event_, err := stream.Recv(); err == io.EOF {
 				break
 			} else if err != nil {
 				return err
-			} else {
-				this.Publisher.Emit(fromProtobufInputEvent(input_event))
+			} else if input_event := fromProtobufInputEvent(nil, input_event_); input_event.EventType() != gopi.INPUT_EVENT_NONE {
+				// We don't emit INPUT_EVENT_NONE events (null events) which are continuously sent to ensure the
+				// connection stays alive
+				events <- input_event
 			}
 		}
 	}

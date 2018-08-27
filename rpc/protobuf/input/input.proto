@@ -87,8 +87,10 @@ message InputEvent {
     google.protobuf.Duration ts = 1;
     InputDeviceType device_type = 2;
     InputEventType event_type = 3;
-    uint32 device = 7;
-    uint32 scancode = 5;
+    uint32 device = 4;
+    uint32 scan_code = 5;
+    uint32 key_code = 6;
+    uint32 key_state = 7;
     Point position = 8;
     Point relative = 9;
     uint32 slot = 10;

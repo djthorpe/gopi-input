@@ -161,16 +161,19 @@ func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
 	} else if this.key_action == EV_VALUE_KEY_UP {
 		evt.event = gopi.INPUT_EVENT_KEYRELEASE
 		evt.key_code = gopi.KeyCode(this.key_code)
+		evt.key_state = this.key_state
 		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
 	} else if this.key_action == EV_VALUE_KEY_DOWN {
 		evt.event = gopi.INPUT_EVENT_KEYPRESS
 		evt.key_code = gopi.KeyCode(this.key_code)
+		evt.key_state = this.key_state
 		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
 	} else if this.key_action == EV_VALUE_KEY_REPEAT {
 		evt.event = gopi.INPUT_EVENT_KEYREPEAT
 		evt.key_code = gopi.KeyCode(this.key_code)
+		evt.key_state = this.key_state
 		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
 	} else {

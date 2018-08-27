@@ -65,7 +65,7 @@ func stringForKeyPosition(evt gopi.InputEvent) string {
 	} else if evt.EventType() == gopi.INPUT_EVENT_ABSPOSITION {
 		return fmt.Sprint(evt.Position())
 	} else {
-		return strings.TrimPrefix(fmt.Sprint(evt.Keycode()), "KEYCODE_")
+		return strings.TrimPrefix(fmt.Sprint(evt.KeyCode()), "KEYCODE_")
 	}
 }
 
