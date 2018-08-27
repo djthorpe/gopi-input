@@ -10,7 +10,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	// Frameworks
@@ -18,7 +21,7 @@ import (
 	input "github.com/djthorpe/gopi-input/rpc/grpc/input"
 
 	// Modules
-	_ "github.com/djthorpe/gopi-rpc/sys/grpc"
+	grpc "github.com/djthorpe/gopi-rpc/sys/grpc"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
@@ -26,6 +29,44 @@ var (
 	// start signal
 	start = make(chan gopi.RPCClientConn)
 )
+
+///////////////////////////////////////////////////////////////////////////////
+
+func stringForDevice(evt gopi.InputEvent) string {
+	device_type := strings.ToLower(strings.TrimPrefix(fmt.Sprint(evt.DeviceType()), "INPUT_TYPE_"))
+	return fmt.Sprintf("%s", device_type)
+}
+
+func stringForEvent(evt gopi.InputEvent) string {
+	return strings.TrimPrefix(fmt.Sprint(evt.EventType()), "INPUT_EVENT_")
+}
+
+func stringForKeyPosition(evt gopi.InputEvent) string {
+	if evt.EventType() == gopi.INPUT_EVENT_RELPOSITION {
+		return fmt.Sprintf("{%v,%v} => {%v,%v}", evt.Relative().X, evt.Relative().Y, evt.Position().X, evt.Position().Y)
+	} else if evt.EventType() == gopi.INPUT_EVENT_ABSPOSITION {
+		return fmt.Sprint(evt.Position())
+	} else {
+		return strings.TrimPrefix(fmt.Sprint(evt.KeyCode()), "KEYCODE_")
+	}
+}
+
+func stringForDeviceState(evt gopi.InputEvent) string {
+	if evt.DeviceType() != gopi.INPUT_TYPE_KEYBOARD {
+		return "N/A"
+	} else {
+		key_state := fmt.Sprint(evt.KeyState())
+		return strings.ToLower(strings.Replace(key_state, "KEYSTATE_", "", -1))
+	}
+}
+
+func PrintInputEvent(evt gopi.InputEvent, once *sync.Once) {
+	once.Do(func() {
+		fmt.Printf("%-25s %-25s %-15s %-15s\n", "DEVICE", "KEY/POSITION", "EVENT", "STATE")
+		fmt.Printf("%-25s %-25s %-15s %-15s\n", strings.Repeat("-", 25), strings.Repeat("-", 25), strings.Repeat("-", 15), strings.Repeat("-", 15))
+	})
+	fmt.Printf("%-25s %-25s %-15s %-15s\n", stringForDevice(evt), stringForKeyPosition(evt), stringForEvent(evt), stringForDeviceState(evt))
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +101,9 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 }
 
 func RunLoop(app *gopi.AppInstance, done <-chan struct{}) error {
+	var once sync.Once
 	pool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool)
+	events := make(chan gopi.InputEvent)
 
 	// Obtain the connection
 	select {
@@ -73,8 +116,27 @@ func RunLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 			return gopi.ErrAppError
 		} else if err := client.Ping(); err != nil {
 			return err
-		} else if err := client.ListenForInputEvents(done); err != nil { // method blocks until 'done' is sent
-			return err
+		} else {
+			// ListenForInputEvents blocks until done is sent, uses events
+			// channel
+			go func() {
+				if err := client.ListenForInputEvents(done, events); err != nil && grpc.IsErrCanceled(err) == false {
+					app.Logger.Error("ListenForInputEvents: %v", err)
+				}
+				close(events)
+			}()
+		}
+	}
+
+FOR_LOOP:
+	for {
+		select {
+		case evt := <-events:
+			if evt == nil {
+				break FOR_LOOP
+			} else {
+				PrintInputEvent(evt, &once)
+			}
 		}
 	}
 

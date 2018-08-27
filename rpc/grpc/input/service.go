@@ -11,6 +11,7 @@ package input
 import (
 	"context"
 	"fmt"
+	"time"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
@@ -115,15 +116,16 @@ func (this *service) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.EmptyRep
 // Listen for InputManager events
 
 func (this *service) ListenForInputEvents(_ *pb.EmptyRequest, stream pb.Input_ListenForInputEventsServer) error {
-	this.log.Debug2("<grpc.service.input.ListenForInputEvents>{ }")
+	this.log.Debug("<grpc.service.input.ListenForInputEvents> Started")
 
 	// Subscribe to events
 	events := this.input.Subscribe()
 	cancel_requests := this.Publisher.Subscribe()
+	timer := time.NewTicker(500 * time.Millisecond)
 
 FOR_LOOP:
-	// Send until loop is broken - either due to stream error
-	// or request cancellation
+	// Send until loop is broken - either due to stream error, cancellation request or
+	// once per 500ms timer which sends null events on the channel
 	for {
 		select {
 		case evt := <-events:
@@ -133,19 +135,34 @@ FOR_LOOP:
 			} else if input_evt, ok := evt.(gopi.InputEvent); ok == false {
 				this.log.Warn("<grpc.service.input.ListenForInputEvents> Warning: ignoring event: %v", evt)
 			} else if err := stream.Send(toProtobufInputEvent(input_evt)); err != nil {
-				this.log.Warn("<grpc.service.input.ListenForInputEvents> Warning: %v: closing request", err)
+				if grpc.IsErrUnavailable(err) == false {
+					// Client did not close connection
+					this.log.Warn("<grpc.service.input.ListenForInputEvents> Warning: %v: closing request", err)
+				}
 				break FOR_LOOP
+			} else {
+				this.log.Debug("Sent event: %v", input_evt)
 			}
 		case <-cancel_requests:
 			break FOR_LOOP
+		case <-timer.C:
+			if err := stream.Send(toProtobufNullEvent()); err != nil {
+				if grpc.IsErrUnavailable(err) == false {
+					// Client not close connection
+					this.log.Warn("<grpc.service.input.ListenForInputEvents> Warning: %v: closing request", err)
+				}
+				break FOR_LOOP
+			}
 		}
 	}
 
 	// Unsubscribe from events
+	timer.Stop()
 	this.input.Unsubscribe(events)
 	this.Publisher.Unsubscribe(cancel_requests)
 
-	this.log.Debug2("<grpc.service.input.ListenForInputEvents> Ended")
+	// Indicate end of sending stream
+	this.log.Debug("<grpc.service.input.ListenForInputEvents> Ended")
 
 	// Return success
 	return nil

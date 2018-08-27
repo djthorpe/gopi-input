@@ -33,7 +33,7 @@ const (
 func init() {
 	// Register InputManager
 	gopi.RegisterModule(gopi.Module{
-		Name:     "linux/input",
+		Name:     "sys/input/linux",
 		Requires: []string{"linux/filepoll"},
 		Type:     gopi.MODULE_TYPE_INPUT,
 		Config: func(config *gopi.AppConfig) {
