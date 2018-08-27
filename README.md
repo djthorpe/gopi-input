@@ -72,50 +72,17 @@ func main() {
 
 In reality, your code might use a `Main` function to set up the
 devices and a `RunLoop` background function to subscribe to events
-and process them. At present the input manager returns events which
-conform to the following interface:
+and process them. At present the input manager emits events which
+conform to the gopi.InputEvent interface. The concepts for any emitted
+event are:
 
-```
-type InputEvent interface {
-	Event
+| Event Data | Description | Event Type |
+| ---------- | ----------- | ---------- |
+| Timestamp()| provides an increasing counter of when an event happened. You might want to use this information to determine if an event is a single click, double click, etc. | ddd |
 
-	// Timestamp of event
-	Timestamp() time.Duration
 
-	// Type of device which has created the event
-	DeviceType() InputDeviceType
 
-	// Event type
-	EventType() InputEventType
-
-	// Device identifier
-	Device() uint32
-
-	// Key or mouse button press or release
-	KeyCode() KeyCode
-
-	// Modifier key state (caps lock, shift, alt, etc)
-	KeyState() KeyState
-
-	// Key scancode
-	ScanCode() uint32
-
-	// Absolute cursor position
-	Position() Point
-
-	// Relative change in position
-	Relative() Point
-
-	// Multi-touch slot identifier
-	Slot() uint
-}
-```
-
-The concepts for the event here are:
-
-* __Timestamp()__ provides an increasing counter of when an event happened. You
-  might want to use this information to determine if an event is a single click,
-  double click, etc.
+* ____ 
 * __DeviceType()__ provides information on the type of device emitting the event,
   for example, Keyboard, Mouse, Touchscreen.
 * __EventType()__ provides information on the type of event. For example, key press
