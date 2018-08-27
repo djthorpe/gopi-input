@@ -15,7 +15,7 @@ The gopi modules provided by this repository are:
 
 | Platform | Import | Type | Name |
 | -------- | ------ | ---- | ---- |
-| Linux    | `github.com/djthorpe/gopi-input/sys/input`  | `gopi.MODULE_TYPE_INPUT` | `linux/input` |
+| Linux    | `github.com/djthorpe/gopi-input/sys/input`  | `gopi.MODULE_TYPE_INPUT`  | `sys/input/linux` |
 | Any      | `github.com/djthorpe/gopi-input/sys/keymap` | `gopi.MODULE_TYPE_KEYMAP` | `sys/keymap` |
 
 The `input` module provides an Input Manager which can be used for discovering input
@@ -36,18 +36,18 @@ specifying you want the input manager module. For example:
 package main
 
 import (
-	// Frameworks
-	gopi "github.com/djthorpe/gopi"
+    // Frameworks
+    gopi "github.com/djthorpe/gopi"
 
-	// Import Input Manager
-	_ "github.com/djthorpe/gopi-input/sys/input"
+    // Import Input Manager
+    _ "github.com/djthorpe/gopi-input/sys/input"
 )
 
 func Main(app *gopi.AppInstance, done chan<- struct{}) error {
     // Open all devices 
     if _, err := app.Input.OpenDevicesByName("",gopi.INPUT_TYPE_ANY,gopi.INPUT_BUS_ANY); err != nil {
-		return err
-	}
+        return err
+    }
     // Assuming there were some devices opened, subscribe to events
     // from the input manager
     events := app.Input.Subscribe()
@@ -59,14 +59,14 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
     // Unsubscribe from input manager events
     app.Input.Unsubscribe(events)
     // Return success
-	return nil
+    return nil
 }
 
 func main() {
     // We want to use the input manager
-	config := gopi.NewAppConfig("input")
+    config := gopi.NewAppConfig("input")
     // Start main loop
-	os.Exit(gopi.CommandLineTool(config, Main))
+    os.Exit(gopi.CommandLineTool(config, Main))
 }
 ```
 
@@ -119,23 +119,23 @@ bash% cd gopi-input && go install cmd/input-tester.go
 bash% input-tester -help
 Usage of input-tester:
   -bus string
-    	Filter by one or more device busses (none,pci,isapnp,usb,hil,bluetooth,virtual,isa,i8042,xtkbd,rs232,gameport,parport,amiga,adb,i2c,host,gsc,atari,spi)
+        Filter by one or more device busses (none,pci,isapnp,usb,hil,bluetooth,virtual,isa,i8042,xtkbd,rs232,gameport,parport,amiga,adb,i2c,host,gsc,atari,spi)
   -debug
-    	Set debugging mode
+        Set debugging mode
   -input.exclusive
-    	Input device exclusivity (default true)
+        Input device exclusivity (default true)
   -log.append
-    	When writing log to file, append output to end of file
+        When writing log to file, append output to end of file
   -log.file string
-    	File for logging (default: log to stderr)
+        File for logging (default: log to stderr)
   -name string
-    	Filter by device name or alias
+        Filter by device name or alias
   -type string
-    	Filter by type of device (none,keyboard,mouse,touchscreen,joystick,remote)
+        Filter by type of device (none,keyboard,mouse,touchscreen,joystick,remote)
   -verbose
-    	Verbose logging
+        Verbose logging
   -watch
-    	Watch for device events
+        Watch for device events
 ```
 
 The `-name`, `-type` and `-bus` flags allow you to chose the devices you want to open. Without
@@ -211,27 +211,27 @@ bash% cd gopi-input && \
 bash% input-service -help
 Usage of input-service:
   -debug
-    	Set debugging mode
+        Set debugging mode
   -input.bus string
-    	Filter by one or more device busses (none,pci,isapnp,usb,hil,bluetooth,virtual,isa,i8042,xtkbd,rs232,gameport,parport,amiga,adb,i2c,host,gsc,atari,spi)
+        Filter by one or more device busses (none,pci,isapnp,usb,hil,bluetooth,virtual,isa,i8042,xtkbd,rs232,gameport,parport,amiga,adb,i2c,host,gsc,atari,spi)
   -input.exclusive
-    	Input device exclusivity (default true)
+        Input device exclusivity (default true)
   -input.name string
-    	Filter by device name or alias
+        Filter by device name or alias
   -input.type string
-    	Filter by type of device (none,keyboard,mouse,touchscreen,joystick,remote)
+        Filter by type of device (none,keyboard,mouse,touchscreen,joystick,remote)
   -log.append
-    	When writing log to file, append output to end of file
+        When writing log to file, append output to end of file
   -log.file string
-    	File for logging (default: log to stderr)
+        File for logging (default: log to stderr)
   -rpc.port uint
-    	Server Port
+        Server Port
   -rpc.sslcert string
-    	SSL Certificate Path
+        SSL Certificate Path
   -rpc.sslkey string
-    	SSL Key Path
+        SSL Key Path
   -verbose
-    	Verbose logging
+        Verbose logging
 ```
 
 In addition to the `-input.name`,`-input.type` and `-input.bus` arguments as before, the
@@ -276,23 +276,23 @@ bash% cd gopi-input && \
 bash% input-client -help
 Usage of input-client:
   -addr string
-    	Gateway address
+        Gateway address
   -debug
-    	Set debugging mode
+        Set debugging mode
   -log.append
-    	When writing log to file, append output to end of file
+        When writing log to file, append output to end of file
   -log.file string
-    	File for logging (default: log to stderr)
+        File for logging (default: log to stderr)
   -rpc.insecure
-    	Disable SSL Connection
+        Disable SSL Connection
   -rpc.service string
-    	Comma-separated list of service names
+        Comma-separated list of service names
   -rpc.skipverify
-    	Skip SSL Verification (default true)
+        Skip SSL Verification (default true)
   -rpc.timeout duration
-    	Connection timeout
+        Connection timeout
   -verbose
-    	Verbose logging
+        Verbose logging
 ```
 
 The output from running the client is the same as running the `input-tester`
