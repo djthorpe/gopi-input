@@ -30,7 +30,6 @@ func toProtobufInputEvent(evt gopi.InputEvent) *pb.InputEvent {
 		Ts:         ptype.DurationProto(evt.Timestamp()),
 		DeviceType: pb.InputDeviceType(evt.DeviceType()),
 		EventType:  pb.InputEventType(evt.EventType()),
-		Device:     evt.Device(),
 		ScanCode:   evt.ScanCode(),
 		KeyCode:    uint32(evt.KeyCode()),
 		KeyState:   uint32(evt.KeyState()),
@@ -41,13 +40,13 @@ func toProtobufInputEvent(evt gopi.InputEvent) *pb.InputEvent {
 	return input_event
 }
 
-func fromProtobufInputEvent(source gopi.Driver, evt *pb.InputEvent) gopi.InputEvent {
+func fromProtobufInputEvent(source gopi.InputDevice, evt *pb.InputEvent) gopi.InputEvent {
 	ts, _ := ptype.Duration(evt.Ts)
+	// TODO: Set device_type and key_state from protobuf
 	return input.NewInputEvent(
-		source, ts, gopi.InputDeviceType(evt.DeviceType), gopi.InputEventType(evt.EventType),
-		fromProtobufPoint(evt.Position), fromProtobufPoint(evt.Relative),
-		gopi.KeyCode(evt.KeyCode), gopi.KeyState(evt.KeyState), uint32(evt.ScanCode),
-		evt.Device, uint(evt.Slot),
+		source, ts, gopi.InputEventType(evt.EventType),
+		gopi.KeyCode(evt.KeyCode), uint32(evt.ScanCode),
+		uint(evt.Slot), fromProtobufPoint(evt.Position), fromProtobufPoint(evt.Relative),
 	)
 }
 
@@ -70,6 +69,7 @@ func fromProtobufPoint(pt *pb.Point) gopi.Point {
 }
 
 func toProtobufInputDevice(device gopi.InputDevice) *pb.InputDevice {
+	// TODO: Set device here
 	input_device := &pb.InputDevice{}
 	return input_device
 }

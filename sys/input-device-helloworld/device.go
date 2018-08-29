@@ -20,7 +20,22 @@ import (
 )
 
 var (
-	ts = time.Now()
+	ts       = time.Now()
+	keycodes = []gopi.KeyCode{
+		gopi.KEYCODE_H,
+		gopi.KEYCODE_E,
+		gopi.KEYCODE_L,
+		gopi.KEYCODE_L,
+		gopi.KEYCODE_O,
+		gopi.KEYCODE_W,
+		gopi.KEYCODE_O,
+		gopi.KEYCODE_R,
+		gopi.KEYCODE_L,
+		gopi.KEYCODE_D,
+		gopi.KEYCODE_ENTER,
+	}
+	duration_keydown = time.Duration(100 * time.Millisecond)
+	duration_keyup   = time.Duration(200 * time.Millisecond)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,10 +75,9 @@ func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 func (this *device) Close() error {
 	this.log.Debug("<sys.inputdevice.Helloworld.Close>{ }")
 
-	if this.done != nil {
-		this.done <- gopi.DONE
-		<-this.done
-	}
+	// Signal done and wait until go routine ends
+	this.done <- gopi.DONE
+	<-this.done
 
 	// Close publisher
 	this.Publisher.Close()
@@ -126,12 +140,21 @@ func (this *device) Matches(name string, device_type gopi.InputDeviceType, devic
 // PRIVATE METHODS
 
 func (this *device) emitEvents() {
-	timer := time.NewTicker(1 * time.Second)
+	keydown_timer := time.NewTimer(duration_keydown)
+	keyup_timer := time.NewTimer(duration_keyup + duration_keydown)
+	keyindex := 0
 FOR_LOOP:
 	for {
 		select {
-		case <-timer.C:
-			this.emitEvent()
+		case <-keydown_timer.C:
+			this.emitEvent(gopi.INPUT_EVENT_KEYPRESS, keycodes[keyindex])
+		case <-keyup_timer.C:
+			this.emitEvent(gopi.INPUT_EVENT_KEYRELEASE, keycodes[keyindex])
+			// reschedule timer
+			keydown_timer.Reset(duration_keydown)
+			keyup_timer.Reset(duration_keyup + duration_keydown)
+			// increment index
+			keyindex = (keyindex + 1) % len(keycodes)
 		case <-this.done:
 			break FOR_LOOP
 		}
@@ -139,7 +162,7 @@ FOR_LOOP:
 	close(this.done)
 }
 
-func (this *device) emitEvent() {
-	this.Emit(input.NewInputEvent(this, time.Now().Sub(ts), this.Type(),
-		gopi.INPUT_EVENT_KEYPRESS, this.Position(), gopi.ZeroPoint, gopi.KEYCODE_ENTER, this.KeyState(), 0, 0, 0))
+func (this *device) emitEvent(event_type gopi.InputEventType, keycode gopi.KeyCode) {
+	this.Emit(input.NewInputEvent(this, time.Now().Sub(ts),
+		event_type, keycode, 0, 0, this.Position(), gopi.ZeroPoint))
 }

@@ -20,12 +20,15 @@ The gopi modules provided by this repository are:
 
 The `input` module provides an Input Manager which can be used for discovering input
 devices (keyboards, mouse or touchscreen). It publishes events when the input devices
-receive events (key presses, releases and cursor moves, for example).
+receive events (key presses, releases and cursor moves, for example). This is currently
+implemented for Linux.
 
 The `keymap` module can receive input events from keyboards and output runes based
 on a set of rules. For example, the 'A' key pressed whilst the shift key is pressed will
 result in the upper-case 'A' rune event being published, and so forth. You can
-create, modify and delete keymap files through this module.
+create, modify and delete keymap files through this module. Ultimately the storage for
+the keymap files should be abstracted, so you could for example store keymap files
+centrally, not on a local filesystem.
 
 ## Using the Input Manager
 
@@ -92,13 +95,87 @@ event are:
 See the interface definitions for [gopi](https://github.com/djthorpe/gopi/blob/master/input.go)
 for more information on input events.
 
+## Implementing an InputDevice
+
+You can implement your own input device which can emit events through an inout manager. There is
+an example implementation which [emits key presses](https://github.com/djthorpe/gopi-input/blob/master/sys/input-device-helloworld). This example
+demonstates creating an InputDevice module and hooking it into the input manager in the `init`
+method:
+
+```
+func init() {
+	gopi.RegisterModule(gopi.Module{
+		Name:     "input/device/helloworld",
+		Requires: []string{"input"},
+		Type:     gopi.MODULE_TYPE_OTHER,
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			return gopi.Open(InputDevice{}, app.Logger)
+		},
+		Run: func(app *gopi.AppInstance, device gopi.Driver) error {
+			if app.Input == nil {
+				return fmt.Errorf("Missing InputManager module instance")
+			} else if err := app.Input.AddDevice(device.(gopi.InputDevice)); err != nil {
+				return err
+			} else {
+				return nil
+			}
+		},
+	})
+}
+```
+
+Then in your application you simply need to import the custom device:
+
+```
+package main
+
+import (      
+	_ "github.com/djthorpe/gopi-input/sys/input"
+	_ "github.com/djthorpe/gopi-input/sys/input-device-helloworld"
+	_ "github.com/djthorpe/gopi/sys/logger"
+)
+
+func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
+	evt_input := app.Input.Subscribe()
+FOR_LOOP:
+	for {
+		select {
+		case <-done:
+			break FOR_LOOP
+		case event := <-evt_input:
+                  // This is where you process incoming input events
+			fmt.Println(event)
+		}
+	}
+	app.Input.Unsubscribe(evt_input)
+	return nil
+}
+
+func Main(app *gopi.AppInstance, done chan<- struct{}) error {
+      // Wait for termination
+	app.WaitForSignal()
+	done <- gopi.DONE
+	return nil
+}
+
+func main() {
+	config := gopi.NewAppConfig("input/device/helloworld")
+	os.Exit(gopi.CommandLineTool(config, Main, EventLoop))
+}
+
+```
+
+It's important to note that any devices added to the input manager
+using the `AddDevice` method are not automatically closed when the
+input manager closes.
+
 ## Features and Bugs
 
 At the moment the following features are in progress:
 
-* Implement the `AddDevice` method for the InputManager
 * Deal with the case where devices are added and removed whilst the software
   is running
+* Implement protocol buffers Devices methods that work
 * Provide events for when devices are added and removed so that they can
   be consumed and more devices opened.
 * Implement the keymap module which translates key presses into runes.
