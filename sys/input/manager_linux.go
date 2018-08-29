@@ -195,8 +195,19 @@ func (this *manager) GetOpenDevices() []gopi.InputDevice {
 // ADD NEW INPUT DEVICE
 
 func (this *manager) AddDevice(device gopi.InputDevice) error {
-	// TODO: This method is currently not implemented
-	return gopi.ErrNotImplemented
+	this.log.Debug2("<sys.input.InputManager.AddDevice>{ device=%v }", device)
+
+	// If device is already added, then return bad parameter error
+	for _, d := range this.devices {
+		if device == d {
+			return gopi.ErrBadParameter
+		}
+	}
+	// Append device
+	this.Merger.Merge(device)
+	this.devices = append(this.devices, device)
+	// Return true
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
