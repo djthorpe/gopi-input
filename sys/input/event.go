@@ -38,18 +38,17 @@ type input_event struct {
 ////////////////////////////////////////////////////////////////////////////////
 // gopi.InputEvent INTERFACE
 
-func NewInputEvent(source gopi.Driver, timestamp time.Duration, device_type gopi.InputDeviceType, event_type gopi.InputEventType, position gopi.Point, rel_position gopi.Point, key_code gopi.KeyCode, key_state gopi.KeyState, scan_code uint32, device_id uint32, slot uint) gopi.InputEvent {
+func NewInputEvent(source gopi.InputDevice, timestamp time.Duration, event_type gopi.InputEventType, key_code gopi.KeyCode, scan_code uint32, slot uint, position gopi.Point, rel_position gopi.Point) gopi.InputEvent {
 	return &input_event{
 		source:       source,
 		timestamp:    timestamp,
-		device:       device_type,
+		device:       source.Type(),
 		event:        event_type,
 		position:     position,
 		rel_position: rel_position,
 		key_code:     key_code,
-		key_state:    key_state,
+		key_state:    source.KeyState(),
 		scan_code:    scan_code,
-		device_id:    device_id,
 		slot:         slot,
 	}
 }
@@ -68,10 +67,6 @@ func (this *input_event) Timestamp() time.Duration {
 
 func (this *input_event) DeviceType() gopi.InputDeviceType {
 	return this.device
-}
-
-func (this *input_event) Device() uint32 {
-	return this.device_id
 }
 
 func (this *input_event) EventType() gopi.InputEventType {

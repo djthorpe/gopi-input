@@ -77,7 +77,7 @@ func (config InputManager) Open(log gopi.Logger) (gopi.Driver, error) {
 func (this *manager) Close() error {
 	this.log.Debug("<sys.input.InputManager.Close>{ }")
 
-	// Close all open devices
+	// Close open devices
 	for _, device := range this.devices {
 		if device != nil {
 			if err := this.CloseDevice(device); err != nil {
@@ -149,13 +149,13 @@ func (this *manager) OpenDevicesByName(alias string, flags gopi.InputDeviceType,
 	return opened_devices, nil
 }
 
-func (this *manager) CloseDevice(device gopi.InputDevice) error {
-	this.log.Debug2("<sys.input.InputManager.CloseDevice>{ device=%v }", device)
+func (this *manager) CloseDevice(device_ gopi.InputDevice) error {
+	this.log.Debug2("<sys.input.InputManager.CloseDevice>{ device=%v }", device_)
 
 	// Find device in array of devices
 	found := -1
 	for i, d := range this.devices {
-		if d == device {
+		if d == device_ {
 			found = i
 		}
 	}
@@ -164,11 +164,13 @@ func (this *manager) CloseDevice(device gopi.InputDevice) error {
 	}
 
 	// Unsubscribe from events
-	this.Merger.Unmerge(device)
+	this.Merger.Unmerge(device_)
 
-	// Close device
-	if err := device.Close(); err != nil {
-		return err
+	// Close device, but only if it's a linux device
+	if _, is_linux := device_.(*device); is_linux {
+		if err := device_.Close(); err != nil {
+			return err
+		}
 	}
 
 	// Remove device from array (nil)
@@ -195,8 +197,19 @@ func (this *manager) GetOpenDevices() []gopi.InputDevice {
 // ADD NEW INPUT DEVICE
 
 func (this *manager) AddDevice(device gopi.InputDevice) error {
-	// TODO: This method is currently not implemented
-	return gopi.ErrNotImplemented
+	this.log.Debug2("<sys.input.InputManager.AddDevice>{ device=%v }", device)
+
+	// If device is already added, then return bad parameter error
+	for _, d := range this.devices {
+		if device == d {
+			return gopi.ErrBadParameter
+		}
+	}
+	// Append device
+	this.Merger.Merge(device)
+	this.devices = append(this.devices, device)
+	// Return true
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
