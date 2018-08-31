@@ -69,7 +69,20 @@ func fromProtobufPoint(pt *pb.Point) gopi.Point {
 }
 
 func toProtobufInputDevice(device gopi.InputDevice) *pb.InputDevice {
-	// TODO: Set device here
-	input_device := &pb.InputDevice{}
-	return input_device
+	if device == nil {
+		return nil
+	}
+	return &pb.InputDevice{
+		Name:       device.Name(),
+		DeviceType: pb.InputDeviceType(device.Type()),
+		DeviceBus:  pb.InputDeviceBus(device.Bus()),
+		Position:   toProtobufPoint(device.Position()),
+	}
+}
+
+func fromProtobufInputDevice(device *pb.InputDevice) gopi.InputDevice {
+	if device == nil {
+		return nil
+	}
+	// TODO
 }

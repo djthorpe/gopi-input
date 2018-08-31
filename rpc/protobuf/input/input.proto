@@ -97,7 +97,7 @@ message InputEvent {
 }
 
 /////////////////////////////////////////////////////////////////////
-// INPUT DEVICES
+// INPUT DEVICE
 
 message InputDevices {
     repeated InputDevice device = 1;
@@ -105,7 +105,6 @@ message InputDevices {
 
 message InputDevice {
     string name = 1;
-    uint32 device_id = 2;
     InputDeviceType device_type = 3;
     InputDeviceBus device_bus = 4;
     Point position = 5;
