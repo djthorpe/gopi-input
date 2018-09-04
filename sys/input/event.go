@@ -39,18 +39,23 @@ type input_event struct {
 // gopi.InputEvent INTERFACE
 
 func NewInputEvent(source gopi.InputDevice, timestamp time.Duration, event_type gopi.InputEventType, key_code gopi.KeyCode, scan_code uint32, slot uint, position gopi.Point, rel_position gopi.Point) gopi.InputEvent {
-	return &input_event{
+	evt := &input_event{
 		source:       source,
 		timestamp:    timestamp,
-		device:       source.Type(),
+		device:       0,
 		event:        event_type,
 		position:     position,
 		rel_position: rel_position,
 		key_code:     key_code,
-		key_state:    source.KeyState(),
+		key_state:    0,
 		scan_code:    scan_code,
 		slot:         slot,
 	}
+	if source != nil {
+		evt.device = source.Type()
+		evt.key_state = source.KeyState()
+	}
+	return evt
 }
 
 func (this *input_event) Name() string {

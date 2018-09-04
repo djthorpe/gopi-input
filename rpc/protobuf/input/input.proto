@@ -104,10 +104,10 @@ message InputDevices {
 }
 
 message InputDevice {
-    string name = 1;
+    string device_name = 1;
     InputDeviceType device_type = 3;
     InputDeviceBus device_bus = 4;
-    Point position = 5;
+    Point device_position = 5;
 }
 
 

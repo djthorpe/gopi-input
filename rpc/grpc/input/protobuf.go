@@ -10,8 +10,10 @@ package input
 
 import (
 	// Frameworks
+
 	gopi "github.com/djthorpe/gopi"
 	input "github.com/djthorpe/gopi-input/sys/input"
+	event "github.com/djthorpe/gopi/util/event"
 
 	// Protocol buffers
 	pb "github.com/djthorpe/gopi-input/rpc/protobuf/input"
@@ -40,6 +42,28 @@ func toProtobufInputEvent(evt gopi.InputEvent) *pb.InputEvent {
 	return input_event
 }
 
+func toProtobufPoint(pt gopi.Point) *pb.Point {
+	return &pb.Point{
+		X: pt.X,
+		Y: pt.Y,
+	}
+}
+
+func toProtobufInputDevice(device gopi.InputDevice) *pb.InputDevice {
+	if device == nil {
+		return nil
+	}
+	return &pb.InputDevice{
+		DeviceName:     device.Name(),
+		DeviceType:     pb.InputDeviceType(device.Type()),
+		DeviceBus:      pb.InputDeviceBus(device.Bus()),
+		DevicePosition: toProtobufPoint(device.Position()),
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FROM PROTOBUF
+
 func fromProtobufInputEvent(source gopi.InputDevice, evt *pb.InputEvent) gopi.InputEvent {
 	ts, _ := ptype.Duration(evt.Ts)
 	// TODO: Set device_type and key_state from protobuf
@@ -48,13 +72,6 @@ func fromProtobufInputEvent(source gopi.InputDevice, evt *pb.InputEvent) gopi.In
 		gopi.KeyCode(evt.KeyCode), uint32(evt.ScanCode),
 		uint(evt.Slot), fromProtobufPoint(evt.Position), fromProtobufPoint(evt.Relative),
 	)
-}
-
-func toProtobufPoint(pt gopi.Point) *pb.Point {
-	return &pb.Point{
-		X: pt.X,
-		Y: pt.Y,
-	}
 }
 
 func fromProtobufPoint(pt *pb.Point) gopi.Point {
@@ -68,21 +85,51 @@ func fromProtobufPoint(pt *pb.Point) gopi.Point {
 	}
 }
 
-func toProtobufInputDevice(device gopi.InputDevice) *pb.InputDevice {
-	if device == nil {
-		return nil
-	}
-	return &pb.InputDevice{
-		Name:       device.Name(),
-		DeviceType: pb.InputDeviceType(device.Type()),
-		DeviceBus:  pb.InputDeviceBus(device.Bus()),
-		Position:   toProtobufPoint(device.Position()),
-	}
+func fromProtobufInputDevice(pb_device *pb.InputDevice) gopi.InputDevice {
+	return &device{pb_device, event.Publisher{}}
 }
 
-func fromProtobufInputDevice(device *pb.InputDevice) gopi.InputDevice {
-	if device == nil {
-		return nil
-	}
-	// TODO
+////////////////////////////////////////////////////////////////////////////////
+// INPUTDEVICE INTERFACE IMPLEMENTATION
+
+type device struct {
+	*pb.InputDevice
+	event.Publisher
+}
+
+func (this *device) Name() string {
+	return this.DeviceName
+}
+
+func (this *device) Type() gopi.InputDeviceType {
+	return gopi.InputDeviceType(this.DeviceType)
+}
+
+func (this *device) Bus() gopi.InputDeviceBus {
+	return gopi.InputDeviceBus(this.DeviceBus)
+}
+
+func (this *device) Position() gopi.Point {
+	return fromProtobufPoint(this.DevicePosition)
+}
+
+// Non-functional methods
+func (this *device) Close() error {
+	return gopi.ErrNotImplemented
+}
+
+func (this *device) SetPosition(pt gopi.Point) {
+	this.DevicePosition = toProtobufPoint(pt)
+}
+
+func (this *device) KeyState() gopi.KeyState {
+	return 0
+}
+
+func (this *device) SetKeyState(gopi.KeyState, bool) error {
+	return gopi.ErrNotImplemented
+}
+
+func (this *device) Matches(string, gopi.InputDeviceType, gopi.InputDeviceBus) bool {
+	return false
 }
