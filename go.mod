@@ -5,7 +5,13 @@ require (
 	github.com/djthorpe/gopi-rpc v1.0.3
 	github.com/golang/protobuf v1.2.0
 	github.com/olekukonko/tablewriter v0.0.0-20180506121414-d4647c9c7a84
-	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d
-	golang.org/x/sys v0.0.0-20180828065106-d99a578cf41b // indirect
-	google.golang.org/grpc v1.14.0
+)
+
+require (
+	github.com/mattn/go-runewidth v0.0.3 // indirect
+	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.3.0 // indirect
+	google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8 // indirect
+	google.golang.org/grpc v1.14.0 // indirect
 )
